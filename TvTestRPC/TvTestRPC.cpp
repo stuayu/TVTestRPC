@@ -8,6 +8,29 @@
 #include <vector>
 #pragma comment(lib,"shlwapi.lib")
 
+// https://github.com/xtne6f/TvtPlay/blob/work/src/_getinfo_test.cpp
+#if 1
+#define WM_TVTP_GET_POSITION    (WM_APP + 52)
+
+BOOL CALLBACK FindTvtPlayFrameEnumProc(HWND hwnd, LPARAM lParam)
+{
+    TCHAR className[32];
+    if (GetClassName(hwnd, className, _countof(className)) && !lstrcmp(className, TEXT("TvtPlay Frame"))) {
+        *(HWND*)lParam = hwnd;
+        return FALSE;
+    }
+    return TRUE;
+}
+
+HWND FindTvtPlayFrame()
+{
+    HWND hwnd = NULL;
+    EnumWindows(FindTvtPlayFrameEnumProc, (LPARAM)&hwnd); // Call from another process
+    //EnumThreadWindows(GetCurrentThreadId(), FindTvtPlayFrameEnumProc, (LPARAM)&hwnd); // Call from plugin
+    return hwnd;
+}
+#endif
+
 class CMyPlugin : public TVTest::CTVTestPlugin
 {
 	DiscordEventHandlers handlers{};
@@ -99,9 +122,32 @@ void CMyPlugin::UpdateState()
 	if (m_pApp->GetCurrentProgramInfo(&Info)) {
 		eventNamed = wide_to_utf8(Info.pszEventName);
 		auto start = SystemTime2Timet(Info.StartTime);
-		auto end = SystemTime2Timet(Info.StartTime) + Info.Duration;
-		discordPresence.startTimestamp = start;
-		if (!conf_TimeMode) discordPresence.endTimestamp = end;
+		auto end = start + Info.Duration;
+		auto now = time(NULL);
+
+		// 放送終了時刻よりも後の場合 (TvtPlay を想定)
+		if (end < now)
+		{
+			// TvtPlay を検索する、複数起動している場合は最初に見つかったものが返る
+		    auto hwnd = FindTvtPlayFrame();
+		    if (hwnd) {
+		        // 現在の再生位置 (秒)
+				int position = SendMessage(hwnd, WM_TVTP_GET_POSITION, 0, 0) / 1000;
+
+		    	start = now + position;
+		    } else
+		    {
+			    start = now;
+		    }
+
+			discordPresence.startTimestamp = start;
+			if (!conf_TimeMode) discordPresence.endTimestamp = start + Info.Duration;
+		}
+		else
+		{
+			discordPresence.startTimestamp = start;
+			if (!conf_TimeMode) discordPresence.endTimestamp = end;
+		}
 	}
 
 	if (m_pApp->GetServiceInfo(0, &Service) && m_pApp->GetCurrentChannelInfo(&ChannelInfo)) {
@@ -140,6 +186,7 @@ void CMyPlugin::UpdateState()
 	discordPresence.instance = 0;
 	Discord_UpdatePresence(&discordPresence);
 
+	m_pApp->AddLog(L"Presence を更新しました。");
 }
 
 void CMyPlugin::SaveConf() {
