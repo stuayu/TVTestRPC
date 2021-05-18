@@ -119,7 +119,7 @@ void CMyPlugin::UpdateState()
 			auto netId = std::to_string(id);
 			discordPresence.largeImageKey = netId.c_str();
 			discordPresence.smallImageKey = "tvtest";
-			discordPresence.smallImageText = "TvTest";
+			discordPresence.smallImageText = "TVTest";
 		}
 		else {
 			discordPresence.largeImageKey = "tvtest";
