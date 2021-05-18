@@ -210,11 +210,10 @@ INT_PTR CALLBACK CMyPlugin::SettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam,
 LRESULT CALLBACK CMyPlugin::EventCallback(UINT Event, LPARAM lParam1, LPARAM lParam2, void* pClientData)
 {
 	CMyPlugin* pThis = static_cast<CMyPlugin*>(pClientData);
-	bool fEnable = lParam1 != 0;
 	switch (Event)
 	{
 	case TVTest::EVENT_PLUGINENABLE:
-		if (fEnable) {
+		if (lParam1 != 0) {
 			pThis->UpdateState();
 			pThis->InitSettings();
 		}
@@ -227,6 +226,9 @@ LRESULT CALLBACK CMyPlugin::EventCallback(UINT Event, LPARAM lParam1, LPARAM lPa
 	case TVTest::EVENT_SERVICECHANGE:
 	case TVTest::EVENT_CHANNELCHANGE:
 	case TVTest::EVENT_SERVICEUPDATE:
+	case TVTest::EVENT_PANELITEM_NOTIFY:
+	case TVTest::EVENT_PREVIEWCHANGE:
+	case TVTest::EVENT_STATUSITEM_DRAW:
 		pThis->UpdateState();
 		return TRUE;
 	case TVTest::EVENT_PLUGINSETTINGS:
