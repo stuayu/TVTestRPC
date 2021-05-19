@@ -1,8 +1,8 @@
 ﻿#include "stdafx.h"
 #include <ctime>
-#include <shlwapi.h>
-#include "resource.h"
+#include "shlwapi.h"
 #include <vector>
+#include "resource.h"
 #include "Utils.cpp"
 
 #pragma comment(lib, "shlwapi.lib")
@@ -52,9 +52,9 @@ public:
     {
         pInfo->Type = TVTest::PLUGIN_TYPE_NORMAL;
         pInfo->Flags = TVTest::PLUGIN_FLAG_HASSETTINGS;
-        pInfo->pszPluginName = L"TvTest RPC";
-        pInfo->pszCopyright = L"(c) 2019-2020 noriokun4649";
-        pInfo->pszDescription = L"DiscordRPCをTvTestで実現します。Discordで視聴中のチャンネルなどの情報が通知されます。";
+        pInfo->pszPluginName = L"Discord Rich Presence";
+        pInfo->pszCopyright = L"© 2021 Nep, 2019-2020 noriokun4649";
+        pInfo->pszDescription = L"Discord Rich Presence を表示します。";
 
         return true;
     }
@@ -65,7 +65,7 @@ public:
     bool Initialize() override
     {
         // Discord RPC クライアントの初期化
-        Discord_Initialize("577065126084214816", &m_handlers, 1, nullptr);
+        Discord_Initialize("844540020286685184", &m_handlers, 1, nullptr);
 
         // TVTest イベントコールバックの設定
         m_pApp->SetEventCallback(EventCallback, this);
@@ -216,14 +216,8 @@ void CMyPlugin::UpdatePresence()
     Channel.Size = sizeof Channel;
 
     std::string eventName;
+	std::string eventText;
     std::string channelName;
-
-	char tvtestVersion[128];
-	auto version = m_pApp->GetVersion();
-    auto major = TVTest::GetMajorVersion(version);
-    auto minor = TVTest::GetMinorVersion(version);
-    auto build = TVTest::GetBuildVersion(version);
-    sprintf_s(tvtestVersion, "TVTest %lu.%lu.%lu", major, minor, build);
 
     if (m_pApp->GetCurrentProgramInfo(&Program))
     {
@@ -235,6 +229,7 @@ void CMyPlugin::UpdatePresence()
         m_eventId = Program.EventID;
 
         eventName = WideToUTF8(Program.pszEventName, m_convertToHalfWidth);
+    	eventText = WideToUTF8(Program.pszEventText, m_convertToHalfWidth);
 
         auto start = SystemTime2Timet(Program.StartTime);
         auto end = start + Program.Duration;
@@ -256,25 +251,32 @@ void CMyPlugin::UpdatePresence()
             channelName = WideToUTF8(Service.szServiceName, m_convertToHalfWidth);
         }
 
-        auto hasLogo = find(knownIds.begin(), knownIds.end(), Channel.NetworkID) != knownIds.end();
-        if (hasLogo && m_showChannelLogo)
+        if (m_showChannelLogo && find(knownIds.begin(), knownIds.end(), Channel.NetworkID) != knownIds.end())
         {
             auto networkId = std::to_string(Channel.NetworkID);
             
-            discordPresence.smallImageKey = "tvtest";
-            discordPresence.smallImageText = tvtestVersion;
         	discordPresence.largeImageKey = networkId.c_str();
-        	discordPresence.largeImageText = channelName.c_str();
         }
         else
         {
-            discordPresence.largeImageKey = "tvtest";
-        	discordPresence.largeImageText = tvtestVersion;
+            discordPresence.largeImageKey = "logo";
         }
+
+    	discordPresence.largeImageText = channelName.c_str();
     }
 	
-    discordPresence.details = channelName.c_str();
-    discordPresence.state = eventName.c_str();
+    discordPresence.details = eventName.c_str();
+    discordPresence.state = eventText.c_str();
+
+	char tvtestVersion[128];
+	auto version = m_pApp->GetVersion();
+    auto major = TVTest::GetMajorVersion(version);
+    auto minor = TVTest::GetMinorVersion(version);
+    auto build = TVTest::GetBuildVersion(version);
+    sprintf_s(tvtestVersion, "TVTest %lu.%lu.%lu", major, minor, build);
+	discordPresence.smallImageKey = "logo";
+    discordPresence.smallImageText = tvtestVersion;
+	
     Discord_UpdatePresence(&discordPresence);
 }
 

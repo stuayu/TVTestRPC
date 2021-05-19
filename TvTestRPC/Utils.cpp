@@ -42,8 +42,6 @@ std::string WideToUTF8(TCHAR* source, const bool asHalfWidth)
 	{
 		return wide_to_utf8(Full2Half(source));
 	}
-    else
-    {
-	    return wide_to_utf8(source);
-    }
+	
+	return wide_to_utf8(source);
 }
