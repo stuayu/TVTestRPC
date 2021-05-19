@@ -2,16 +2,22 @@
 //
 
 #include "stdafx.h"
-#include <time.h>
+#include <ctime>
 #include <shlwapi.h>
 #include "resource.h"
 #include <vector>
 #pragma comment(lib,"shlwapi.lib")
 
+#define TvTestRPC_WINDOW_CLASS TEXT("TvTestRPC Window")
+#define TvTestRPC_TIMER_ID 1
+
 class CMyPlugin : public TVTest::CTVTestPlugin
 {
 	DiscordEventHandlers handlers{};
+	static time_t SystemTime2Timet(const SYSTEMTIME&);
 	static LRESULT CALLBACK EventCallback(UINT Event, LPARAM lParam1, LPARAM lParam2, void* pClientData);
+	static LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+	static CMyPlugin *GetThis(HWND hwnd);
 	static INT_PTR CALLBACK SettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam, void* pClientData);
 	bool ShowDialog(HWND hwndOwner);
 	TCHAR m_szIniFileName[MAX_PATH];
@@ -19,6 +25,7 @@ class CMyPlugin : public TVTest::CTVTestPlugin
 	bool conf_TimeMode = false;
 	bool conf_LogoMode = false;
 	bool conf_isFinalized = false;
+	HWND m_hwnd;
 	bool InitSettings();
 	bool pluginState = false;
 	void SaveConf();
@@ -27,8 +34,6 @@ class CMyPlugin : public TVTest::CTVTestPlugin
 	const std::vector<WORD> knownIds = { 32736, 32737, 32738, 32739, 32740, 32741, 3274, 32742, 32327, 32375, 32391};
 
 public:
-	time_t SystemTime2Timet(const SYSTEMTIME&);
-
 	DWORD GetVersion() override
 	{
 		return TVTEST_PLUGIN_VERSION_(0, 0, 1);
@@ -48,12 +53,46 @@ public:
 	{
 		InitDiscord();
 		m_pApp->SetEventCallback(EventCallback, this);
+
+		// ウィンドウクラスの登録
+		WNDCLASS wc{};
+		wc.style = 0;
+		wc.lpfnWndProc = WndProc;
+		wc.cbClsExtra = 0;
+		wc.cbWndExtra = 0;
+		wc.hInstance = g_hinstDLL;
+		wc.hIcon = nullptr;
+		wc.hCursor = nullptr;
+		wc.hbrBackground = nullptr;
+		wc.lpszMenuName = nullptr;
+		wc.lpszClassName = TvTestRPC_WINDOW_CLASS;
+		if (::RegisterClass(&wc) == 0) {
+			return false;
+		}
+
+		// ウィンドウの作成
+		m_hwnd = ::CreateWindowEx(
+			0, TvTestRPC_WINDOW_CLASS, nullptr, WS_POPUP,
+			0, 0, 0, 0, HWND_MESSAGE, nullptr, g_hinstDLL, this);
+		if (m_hwnd == nullptr)
+		{
+			return false;
+		}
+
 		return true;
 	}
+
 	bool Finalize() override
 	{
 		Discord_Shutdown();
 		SaveConf();
+
+		// ウィンドウ・タイマーの破棄
+		if (m_hwnd) {
+			::KillTimer(m_hwnd, TvTestRPC_TIMER_ID);
+			::DestroyWindow(m_hwnd);
+		}
+		
 		return true;
 	}
 };
@@ -139,7 +178,6 @@ void CMyPlugin::UpdateState()
 	discordPresence.spectateSecret = "";
 	discordPresence.instance = 0;
 	Discord_UpdatePresence(&discordPresence);
-
 }
 
 void CMyPlugin::SaveConf() {
@@ -209,12 +247,12 @@ INT_PTR CALLBACK CMyPlugin::SettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam,
 
 LRESULT CALLBACK CMyPlugin::EventCallback(UINT Event, LPARAM lParam1, LPARAM lParam2, void* pClientData)
 {
-	CMyPlugin* pThis = static_cast<CMyPlugin*>(pClientData);
-	bool fEnable = lParam1 != 0;
+	auto *pThis = static_cast<CMyPlugin*>(pClientData);
+	
 	switch (Event)
 	{
 	case TVTest::EVENT_PLUGINENABLE:
-		if (fEnable) {
+		if (lParam1 != 0) {
 			pThis->UpdateState();
 			pThis->InitSettings();
 		}
@@ -223,14 +261,58 @@ LRESULT CALLBACK CMyPlugin::EventCallback(UINT Event, LPARAM lParam1, LPARAM lPa
 			pThis->pluginState = false;
 			Discord_ClearPresence();
 		}
+		
 		return TRUE;
+
 	case TVTest::EVENT_SERVICECHANGE:
 	case TVTest::EVENT_CHANNELCHANGE:
 	case TVTest::EVENT_SERVICEUPDATE:
 		pThis->UpdateState();
 		return TRUE;
+
 	case TVTest::EVENT_PLUGINSETTINGS:
 		return pThis->ShowDialog(reinterpret_cast<HWND>(lParam1));
+
+	default:
+		return 0;
 	}
-	return 0;
+}
+
+/*
+ * ウィンドウプロシージャ
+ * タイマー処理を行う
+ */
+LRESULT CALLBACK CMyPlugin::WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+	switch (uMsg) {
+	case WM_CREATE:
+		auto pcs = reinterpret_cast<LPCREATESTRUCT>(lParam);
+		auto* pThis = static_cast<CMyPlugin*>(pcs->lpCreateParams);
+
+		::SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(pThis));
+		::SetTimer(hwnd, TvTestRPC_TIMER_ID, 3000, nullptr);
+
+		return TRUE;
+	
+
+	case WM_TIMER:
+		if (wParam == TvTestRPC_TIMER_ID)
+		{
+			auto *pThis = GetThis(hwnd);
+			pThis->UpdateState();
+		}
+		
+		return 0;
+		
+	default:
+		return ::DefWindowProc(hwnd, uMsg, wParam, lParam);
+	}
+}
+
+/*
+ * ウィンドウハンドルから this を取得する
+ */
+CMyPlugin *CMyPlugin::GetThis(HWND hwnd)
+{
+	return reinterpret_cast<CMyPlugin*>(::GetWindowLongPtr(hwnd, GWLP_USERDATA));
 }
