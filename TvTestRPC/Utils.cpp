@@ -36,6 +36,9 @@ TCHAR* Full2Half(TCHAR* source)
     return source;
 }
 
+/*
+ * WCHAR を std::string に変換する
+ */
 std::string WideToUTF8(TCHAR* source, const bool asHalfWidth)
 {
 	if (asHalfWidth)
@@ -44,4 +47,12 @@ std::string WideToUTF8(TCHAR* source, const bool asHalfWidth)
 	}
 	
 	return wide_to_utf8(source);
+}
+
+const std::vector<WORD> knownNetworkIds = {
+};
+
+bool HasLogo(const WORD networkId)
+{
+	return find(knownNetworkIds.begin(), knownNetworkIds.end(), networkId) != knownNetworkIds.end();
 }
