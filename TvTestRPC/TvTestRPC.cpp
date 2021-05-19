@@ -26,6 +26,7 @@ class CMyPlugin : public TVTest::CTVTestPlugin
 	bool conf_LogoMode = false;
 	bool conf_isFinalized = false;
 	HWND m_hwnd;
+	WORD m_EventId;
 	bool InitSettings();
 	bool pluginState = false;
 	void SaveConf();
@@ -116,29 +117,40 @@ void CMyPlugin::InitDiscord()
 void CMyPlugin::UpdateState()
 {
 	DiscordRichPresence discordPresence;
-	memset(&discordPresence, 0, sizeof(discordPresence));
-	TVTest::ProgramInfo Info;
-	TVTest::ServiceInfo Service;
-	TVTest::ChannelInfo ChannelInfo;
-	Info.Size = sizeof(Info);
-	Service.Size = sizeof(Service);
-	ChannelInfo.Size = sizeof(ChannelInfo);
+	memset(&discordPresence, 0, sizeof discordPresence);
+
+	TVTest::ProgramInfo Program{};
+	Program.Size = sizeof(Program);
 	wchar_t eventName[128];
 	wchar_t eventText[128];
 	wchar_t eventExtText[128];
-	Info.pszEventName = eventName;
-	Info.MaxEventName = sizeof(eventName) / sizeof(eventName[0]);
-	Info.pszEventText = eventText;
-	Info.MaxEventText = sizeof(eventText) / sizeof(eventText[0]);
-	Info.pszEventExtText = eventExtText;
-	Info.MaxEventExtText = sizeof(eventExtText) / sizeof(eventExtText[0]);
+	Program.pszEventName = eventName;
+	Program.MaxEventName = sizeof eventName / sizeof eventName[0];
+	Program.pszEventText = eventText;
+	Program.MaxEventText = sizeof eventText / sizeof eventText[0];
+	Program.pszEventExtText = eventExtText;
+	Program.MaxEventExtText = sizeof eventExtText / sizeof eventExtText[0];
 	std::string channelName;
 	std::string eventNamed;
 
-	if (m_pApp->GetCurrentProgramInfo(&Info)) {
-		eventNamed = wide_to_utf8(Info.pszEventName);
-		auto start = SystemTime2Timet(Info.StartTime);
-		auto end = SystemTime2Timet(Info.StartTime) + Info.Duration;
+	TVTest::ServiceInfo Service{};
+	Service.Size = sizeof(Service);
+
+	TVTest::ChannelInfo ChannelInfo{};
+	ChannelInfo.Size = sizeof(ChannelInfo);
+
+	if (m_pApp->GetCurrentProgramInfo(&Program)) {
+		// 前回と同じ Event ID であれば更新する必要はない
+		if (m_EventId == Program.EventID)
+		{
+			return;
+		}
+		m_EventId = Program.EventID;
+		
+		eventNamed = wide_to_utf8(Program.pszEventName);
+
+		auto start = SystemTime2Timet(Program.StartTime);
+		auto end = SystemTime2Timet(Program.StartTime) + Program.Duration;
 		discordPresence.startTimestamp = start;
 		if (!conf_TimeMode) discordPresence.endTimestamp = end;
 	}
@@ -220,15 +232,19 @@ bool CMyPlugin::ShowDialog(HWND hwndOwner) {
 
 INT_PTR CALLBACK CMyPlugin::SettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam, void* pClientData) {
 	CMyPlugin* pThis = static_cast<CMyPlugin*>(pClientData);
+
 	switch (uMsg)
 	{
 	case WM_INITDIALOG:
 		::CheckDlgButton(hDlg, IDC_CHECK1, pThis->conf_ChannelMode ? BST_CHECKED : BST_UNCHECKED);
 		::CheckDlgButton(hDlg, IDC_CHECK2, pThis->conf_TimeMode ? BST_CHECKED : BST_UNCHECKED);
 		::CheckDlgButton(hDlg, IDC_CHECK3, pThis->conf_LogoMode ? BST_CHECKED : BST_UNCHECKED);
+
 		return TRUE;
+
 	case WM_COMMAND:
-		switch (LOWORD(wParam)) {
+		switch (wParam)
+		{
 		case IDOK:
 			pThis->conf_ChannelMode = ::IsDlgButtonChecked(hDlg, IDC_CHECK1) == BST_CHECKED;
 			pThis->conf_TimeMode = ::IsDlgButtonChecked(hDlg, IDC_CHECK2) == BST_CHECKED;
@@ -238,11 +254,10 @@ INT_PTR CALLBACK CMyPlugin::SettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam,
 			::EndDialog(hDlg, LOWORD(wParam));
 			return TRUE;
 		}
+
 	default:
-		break;
 		return FALSE;
 	}
-	return FALSE;
 }
 
 LRESULT CALLBACK CMyPlugin::EventCallback(UINT Event, LPARAM lParam1, LPARAM lParam2, void* pClientData)
@@ -286,14 +301,15 @@ LRESULT CALLBACK CMyPlugin::WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM 
 {
 	switch (uMsg) {
 	case WM_CREATE:
-		auto pcs = reinterpret_cast<LPCREATESTRUCT>(lParam);
-		auto* pThis = static_cast<CMyPlugin*>(pcs->lpCreateParams);
+		{
+			auto pcs = reinterpret_cast<LPCREATESTRUCT>(lParam);
+			auto* pThis = static_cast<CMyPlugin*>(pcs->lpCreateParams);
 
-		::SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(pThis));
-		::SetTimer(hwnd, TvTestRPC_TIMER_ID, 3000, nullptr);
+			::SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(pThis));
+			::SetTimer(hwnd, TvTestRPC_TIMER_ID, 3000, nullptr);
+		}
 
 		return TRUE;
-	
 
 	case WM_TIMER:
 		if (wParam == TvTestRPC_TIMER_ID)
