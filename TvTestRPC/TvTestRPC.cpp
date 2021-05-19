@@ -3,7 +3,7 @@
 #include <shlwapi.h>
 #include "resource.h"
 #include <vector>
-#include "Utils.h"
+#include "Utils.cpp"
 
 #pragma comment(lib, "shlwapi.lib")
 
@@ -12,110 +12,110 @@
 
 class CMyPlugin final : public TVTest::CTVTestPlugin
 {
-	DiscordEventHandlers handlers{};
-	const std::vector<WORD> knownIds = {32736, 32737, 32738, 32739, 32740, 32741, 3274, 32742, 32327, 32375, 32391};
+    const std::vector<WORD> knownIds = {32736, 32737, 32738, 32739, 32740, 32741, 3274, 32742, 32327, 32375, 32391};
 
-	TCHAR m_iniFileName[MAX_PATH]{};
-	HWND m_hwnd{};
-	WORD m_eventId{};
+    DiscordEventHandlers m_handlers{};
+    TCHAR m_iniFileName[MAX_PATH]{};
+    HWND m_hwnd{};
+    WORD m_eventId{};
 
-	bool m_channelMode = false;
-	bool m_timeMode = false;
-	bool m_logoMode = false;
-	bool m_isReady = false;
+    bool m_showChannelName = false;
+    bool m_showEndTime = false;
+    bool m_showChannelLogo = false;
+    bool m_isReady = false;
 
-	bool LoadConfig();
-	void SaveConfig() const;
-	bool ShowDialog(HWND hwndOwner);
+    bool LoadConfig();
+    void SaveConfig() const;
+    bool ShowDialog(HWND hwndOwner);
 
-	void UpdatePresence();
+    void UpdatePresence();
 
-	static LRESULT CALLBACK EventCallback(UINT Event, LPARAM lParam1, LPARAM lParam2, void* pClientData);
-	static LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-	static INT_PTR CALLBACK SettingsDialogProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam, void* pClientData);
-	static CMyPlugin* GetThis(HWND hwnd);
+    static LRESULT CALLBACK EventCallback(UINT Event, LPARAM lParam1, LPARAM lParam2, void* pClientData);
+    static LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+    static INT_PTR CALLBACK SettingsDialogProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam, void* pClientData);
+    static CMyPlugin* GetThis(HWND hwnd);
 
 public:
-	/*
-	 * プラグインのバージョンを返す
-	 */
-	DWORD GetVersion() override
-	{
-		return TVTEST_PLUGIN_VERSION_(0, 0, 1);
-	}
+    /*
+     * プラグインのバージョンを返す
+     */
+    DWORD GetVersion() override
+    {
+        return TVTEST_PLUGIN_VERSION_(0, 0, 1);
+    }
 
-	/*
-	 * プラグインの情報を返す
-	 */
-	bool GetPluginInfo(TVTest::PluginInfo* pInfo) override
-	{
-		pInfo->Type = TVTest::PLUGIN_TYPE_NORMAL;
-		pInfo->Flags = TVTest::PLUGIN_FLAG_HASSETTINGS;
-		pInfo->pszPluginName = L"TvTest RPC";
-		pInfo->pszCopyright = L"(c) 2019-2020 noriokun4649";
-		pInfo->pszDescription = L"DiscordRPCをTvTestで実現します。Discordで視聴中のチャンネルなどの情報が通知されます。";
+    /*
+     * プラグインの情報を返す
+     */
+    bool GetPluginInfo(TVTest::PluginInfo* pInfo) override
+    {
+        pInfo->Type = TVTest::PLUGIN_TYPE_NORMAL;
+        pInfo->Flags = TVTest::PLUGIN_FLAG_HASSETTINGS;
+        pInfo->pszPluginName = L"TvTest RPC";
+        pInfo->pszCopyright = L"(c) 2019-2020 noriokun4649";
+        pInfo->pszDescription = L"DiscordRPCをTvTestで実現します。Discordで視聴中のチャンネルなどの情報が通知されます。";
 
-		return true;
-	}
+        return true;
+    }
 
-	/*
-	 * プラグインの初期化を行う
-	 */
-	bool Initialize() override
-	{
-		// Discord RPC クライアントの初期化
-		Discord_Initialize("577065126084214816", &handlers, 1, nullptr);
+    /*
+     * プラグインの初期化を行う
+     */
+    bool Initialize() override
+    {
+        // Discord RPC クライアントの初期化
+        Discord_Initialize("577065126084214816", &m_handlers, 1, nullptr);
 
-		// TVTest イベントコールバックの設定
-		m_pApp->SetEventCallback(EventCallback, this);
+        // TVTest イベントコールバックの設定
+        m_pApp->SetEventCallback(EventCallback, this);
 
-		// ウィンドウクラスの登録
-		WNDCLASS wc;
-		wc.style = 0;
-		wc.lpfnWndProc = WndProc;
-		wc.cbClsExtra = 0;
-		wc.cbWndExtra = 0;
-		wc.hInstance = g_hinstDLL;
-		wc.hIcon = nullptr;
-		wc.hCursor = nullptr;
-		wc.hbrBackground = nullptr;
-		wc.lpszMenuName = nullptr;
-		wc.lpszClassName = TvTestRPC_WINDOW_CLASS;
-		if (::RegisterClass(&wc) == 0)
-		{
-			return false;
-		}
+        // ウィンドウクラスの登録
+        WNDCLASS wc;
+        wc.style = 0;
+        wc.lpfnWndProc = WndProc;
+        wc.cbClsExtra = 0;
+        wc.cbWndExtra = 0;
+        wc.hInstance = g_hinstDLL;
+        wc.hIcon = nullptr;
+        wc.hCursor = nullptr;
+        wc.hbrBackground = nullptr;
+        wc.lpszMenuName = nullptr;
+        wc.lpszClassName = TvTestRPC_WINDOW_CLASS;
+        if (::RegisterClass(&wc) == 0)
+        {
+            return false;
+        }
 
-		// ウィンドウの作成
-		m_hwnd = ::CreateWindowEx(
-			0, TvTestRPC_WINDOW_CLASS, nullptr, WS_POPUP,
-			0, 0, 0, 0, HWND_MESSAGE, nullptr, g_hinstDLL, this
-		);
-		if (m_hwnd == nullptr)
-		{
-			return false;
-		}
+        // ウィンドウの作成
+        m_hwnd = ::CreateWindowEx(
+            0, TvTestRPC_WINDOW_CLASS, nullptr, WS_POPUP,
+            0, 0, 0, 0, HWND_MESSAGE, nullptr, g_hinstDLL, this
+        );
+        if (m_hwnd == nullptr)
+        {
+            return false;
+        }
 
-		return true;
-	}
+        return true;
+    }
 
-	/*
-	 * プラグインの終了処理を行う
-	 */
-	bool Finalize() override
-	{
-		// 設定を保存
-		SaveConfig();
+    /*
+     * プラグインの終了処理を行う
+     */
+    bool Finalize() override
+    {
+        // 設定を保存
+        SaveConfig();
 
-		// タイマー・ウィンドウの破棄
-		::KillTimer(m_hwnd, TvTestRPC_TIMER_ID);
-		::DestroyWindow(m_hwnd);
+        // タイマー・ウィンドウの破棄
+        ::KillTimer(m_hwnd, TvTestRPC_TIMER_ID);
+        ::DestroyWindow(m_hwnd);
 
-		// Discord RPC クライアントの破棄
-		Discord_Shutdown();
+        // Discord RPC クライアントの破棄
+        Discord_Shutdown();
 
-		return true;
-	}
+        return true;
+    }
 };
 
 /*
@@ -123,7 +123,7 @@ public:
  */
 TVTest::CTVTestPlugin* CreatePluginClass()
 {
-	return new CMyPlugin;
+    return new CMyPlugin;
 }
 
 /*
@@ -131,15 +131,15 @@ TVTest::CTVTestPlugin* CreatePluginClass()
  */
 bool CMyPlugin::LoadConfig()
 {
-	::GetModuleFileName(g_hinstDLL, m_iniFileName, MAX_PATH);
-	::PathRenameExtension(m_iniFileName, L".ini");
+    ::GetModuleFileName(g_hinstDLL, m_iniFileName, MAX_PATH);
+    ::PathRenameExtension(m_iniFileName, L".ini");
 
-	m_channelMode = ::GetPrivateProfileInt(L"Settings", L"Mode", m_channelMode, m_iniFileName) != 0;
-	m_timeMode = ::GetPrivateProfileInt(L"Settings", L"TimeMode", m_channelMode, m_iniFileName) != 0;
-	m_logoMode = ::GetPrivateProfileInt(L"Settings", L"LogoMode", m_channelMode, m_iniFileName) != 0;
-	m_isReady = true;
+    m_showChannelName = ::GetPrivateProfileInt(L"Settings", L"ShowChannelName", m_showChannelName, m_iniFileName) != 0;
+    m_showEndTime = ::GetPrivateProfileInt(L"Settings", L"ShowEndTime", m_showEndTime, m_iniFileName) != 0;
+    m_showChannelLogo = ::GetPrivateProfileInt(L"Settings", L"ShowChannelLogo", m_showChannelLogo, m_iniFileName) != 0;
+    m_isReady = true;
 
-	return true;
+    return true;
 }
 
 /*
@@ -147,27 +147,27 @@ bool CMyPlugin::LoadConfig()
  */
 void CMyPlugin::SaveConfig() const
 {
-	if (m_isReady)
-	{
-		struct IntString
-		{
-			TCHAR m_buffer[16]{};
+    if (m_isReady)
+    {
+        struct IntString
+        {
+            TCHAR m_buffer[16]{};
 
-			explicit IntString(const int value)
-			{
-				::wsprintf(m_buffer, L"%d", value);
-			}
+            explicit IntString(const int value)
+            {
+                ::wsprintf(m_buffer, L"%d", value);
+            }
 
-			operator LPCTSTR() const
-			{
-				return m_buffer;
-			}
-		};
+            operator LPCTSTR() const
+            {
+                return m_buffer;
+            }
+        };
 
-		::WritePrivateProfileString(L"Settings", L"Mode", IntString(m_channelMode), m_iniFileName);
-		::WritePrivateProfileString(L"Settings", L"TimeMode", IntString(m_timeMode), m_iniFileName);
-		::WritePrivateProfileString(L"Settings", L"LogoMode", IntString(m_logoMode), m_iniFileName);
-	}
+        ::WritePrivateProfileString(L"Settings", L"ShowChannelName", IntString(m_showChannelName), m_iniFileName);
+        ::WritePrivateProfileString(L"Settings", L"ShowEndTime", IntString(m_showEndTime), m_iniFileName);
+        ::WritePrivateProfileString(L"Settings", L"ShowChannelLogo", IntString(m_showChannelLogo), m_iniFileName);
+    }
 }
 
 /*
@@ -175,15 +175,15 @@ void CMyPlugin::SaveConfig() const
  */
 bool CMyPlugin::ShowDialog(const HWND hwndOwner)
 {
-	TVTest::ShowDialogInfo Info{};
-	Info.Flags = 0;
-	Info.hinst = g_hinstDLL;
-	Info.pszTemplate = MAKEINTRESOURCE(IDD_DIALOG1);
-	Info.pMessageFunc = SettingsDialogProc;
-	Info.pClientData = this;
-	Info.hwndOwner = hwndOwner;
+    TVTest::ShowDialogInfo Info{};
+    Info.Flags = 0;
+    Info.hinst = g_hinstDLL;
+    Info.pszTemplate = MAKEINTRESOURCE(IDD_DIALOG1);
+    Info.pMessageFunc = SettingsDialogProc;
+    Info.pClientData = this;
+    Info.hwndOwner = hwndOwner;
 
-	return m_pApp->ShowDialog(&Info) == IDOK;
+    return m_pApp->ShowDialog(&Info) == IDOK;
 }
 
 /*
@@ -191,110 +191,124 @@ bool CMyPlugin::ShowDialog(const HWND hwndOwner)
  */
 void CMyPlugin::UpdatePresence()
 {
-	DiscordRichPresence discordPresence;
-	memset(&discordPresence, 0, sizeof discordPresence);
+    DiscordRichPresence discordPresence;
+    memset(&discordPresence, 0, sizeof discordPresence);
 
-	TVTest::ProgramInfo Program{};
-	Program.Size = sizeof(Program);
-	wchar_t eventName[128];
-	wchar_t eventText[128];
-	wchar_t eventExtText[128];
-	Program.pszEventName = eventName;
-	Program.MaxEventName = sizeof eventName / sizeof eventName[0];
-	Program.pszEventText = eventText;
-	Program.MaxEventText = sizeof eventText / sizeof eventText[0];
-	Program.pszEventExtText = eventExtText;
-	Program.MaxEventExtText = sizeof eventExtText / sizeof eventExtText[0];
-	std::string channelName;
-	std::string eventNamed;
+    TVTest::ProgramInfo Program{};
+    Program.Size = sizeof Program;
+    wchar_t pszEventName[128];
+    Program.pszEventName = pszEventName;
+    Program.MaxEventName = sizeof pszEventName / sizeof pszEventName[0];
+    wchar_t pszEventText[128];
+    Program.pszEventText = pszEventText;
+    Program.MaxEventText = sizeof pszEventText / sizeof pszEventText[0];
+    wchar_t pszEventExtText[128];
+    Program.pszEventExtText = pszEventExtText;
+    Program.MaxEventExtText = sizeof pszEventExtText / sizeof pszEventExtText[0];
 
-	TVTest::ServiceInfo Service{};
-	Service.Size = sizeof Service;
+    TVTest::ServiceInfo Service{};
+    Service.Size = sizeof Service;
 
-	TVTest::ChannelInfo ChannelInfo{};
-	ChannelInfo.Size = sizeof ChannelInfo;
+    TVTest::ChannelInfo ChannelInfo{};
+    ChannelInfo.Size = sizeof ChannelInfo;
 
-	if (m_pApp->GetCurrentProgramInfo(&Program))
-	{
-		// 前回と同じ Event ID であれば更新する必要はない
-		if (m_eventId == Program.EventID)
-		{
-			return;
-		}
-		m_eventId = Program.EventID;
+    std::string eventName;
+    std::string channelName;
 
-		eventNamed = wide_to_utf8(Program.pszEventName);
+    if (m_pApp->GetCurrentProgramInfo(&Program))
+    {
+        // 前回と同じ Event ID であれば更新する必要はない
+        if (m_eventId == Program.EventID)
+        {
+            return;
+        }
+        m_eventId = Program.EventID;
 
-		auto start = SystemTime2Timet(Program.StartTime);
-		auto end = SystemTime2Timet(Program.StartTime) + Program.Duration;
-		discordPresence.startTimestamp = start;
-		if (!m_timeMode) discordPresence.endTimestamp = end;
-	}
+        eventName = wide_to_utf8(Program.pszEventName);
 
-	if (m_pApp->GetServiceInfo(0, &Service) && m_pApp->GetCurrentChannelInfo(&ChannelInfo))
-	{
-		if (!m_channelMode)
-		{
-			channelName = wide_to_utf8(Service.szServiceName);
-		}
-		else
-		{
-			channelName = wide_to_utf8(ChannelInfo.szChannelName);
-		}
+        auto start = SystemTime2Timet(Program.StartTime);
+        auto end = start + Program.Duration;
+        
+        discordPresence.startTimestamp = start;
+        if (m_showEndTime) {
+            discordPresence.endTimestamp = end;
+        }
+    }
 
-		auto hasLogo = find(knownIds.begin(), knownIds.end(), ChannelInfo.NetworkID) != knownIds.end();
-		if (hasLogo && m_logoMode)
-		{
-			auto networkId = std::to_string(ChannelInfo.NetworkID);
-			discordPresence.largeImageKey = networkId.c_str();
-			discordPresence.smallImageKey = "tvtest";
-		}
-		else
-		{
-			discordPresence.largeImageKey = "tvtest";
-			discordPresence.smallImageKey = "";
-			discordPresence.smallImageText = "";
-		}
-	}
+    if (m_pApp->GetServiceInfo(0, &Service) && m_pApp->GetCurrentChannelInfo(&ChannelInfo))
+    {
+        if (m_showChannelName)
+        {
+            channelName = wide_to_utf8(ChannelInfo.szChannelName);
+        }
+        else
+        {
+            channelName = wide_to_utf8(Service.szServiceName);
+        }
 
-	discordPresence.details = channelName.c_str();
-	discordPresence.largeImageText = channelName.c_str();
-	discordPresence.state = eventNamed.c_str();
-	Discord_UpdatePresence(&discordPresence);
+        auto hasLogo = find(knownIds.begin(), knownIds.end(), ChannelInfo.NetworkID) != knownIds.end();
+        if (hasLogo && m_showChannelLogo)
+        {
+            auto networkId = std::to_string(ChannelInfo.NetworkID);
+            discordPresence.largeImageKey = networkId.c_str();
+            discordPresence.smallImageKey = "tvtest";
+
+            auto version = m_pApp->GetVersion();
+            auto major = TVTest::GetMajorVersion(version);
+            auto minor = TVTest::GetMinorVersion(version);
+            auto build = TVTest::GetBuildVersion(version);
+
+            char smallImageText[128];
+            sprintf_s(smallImageText, "TVTest %lu.%lu.%lu", major, minor, build);
+            discordPresence.smallImageText = smallImageText;
+        }
+        else
+        {
+            discordPresence.largeImageKey = "tvtest";
+        }
+    }
+
+    discordPresence.details = channelName.c_str();
+    discordPresence.largeImageText = channelName.c_str();
+    discordPresence.state = eventName.c_str();
+    Discord_UpdatePresence(&discordPresence);
 }
 
+/*
+ * TVTest のイベントコールバック
+ */
 LRESULT CALLBACK CMyPlugin::EventCallback(const UINT Event, const LPARAM lParam1, LPARAM, void* pClientData)
 {
-	auto* pThis = static_cast<CMyPlugin*>(pClientData);
+    auto* pThis = static_cast<CMyPlugin*>(pClientData);
 
-	switch (Event)
-	{
-	case TVTest::EVENT_PLUGINENABLE:
-		if (lParam1 != 0)
-		{
-			pThis->LoadConfig();
-			pThis->UpdatePresence();
-		}
-		else
-		{
-			Discord_ClearPresence();
-		}
+    switch (Event)
+    {
+    case TVTest::EVENT_PLUGINENABLE:
+        if (lParam1 != 0)
+        {
+            pThis->LoadConfig();
+            pThis->UpdatePresence();
+        }
+        else
+        {
+            Discord_ClearPresence();
+        }
 
-		return true;
+        return true;
 
-	case TVTest::EVENT_SERVICECHANGE:
-	case TVTest::EVENT_CHANNELCHANGE:
-	case TVTest::EVENT_SERVICEUPDATE:
-		pThis->UpdatePresence();
+    case TVTest::EVENT_SERVICECHANGE:
+    case TVTest::EVENT_CHANNELCHANGE:
+    case TVTest::EVENT_SERVICEUPDATE:
+        pThis->UpdatePresence();
 
-		return true;
+        return true;
 
-	case TVTest::EVENT_PLUGINSETTINGS:
-		return pThis->ShowDialog(reinterpret_cast<HWND>(lParam1));
+    case TVTest::EVENT_PLUGINSETTINGS:
+        return pThis->ShowDialog(reinterpret_cast<HWND>(lParam1));
 
-	default:
-		return false;
-	}
+    default:
+        return false;
+    }
 }
 
 /*
@@ -303,31 +317,31 @@ LRESULT CALLBACK CMyPlugin::EventCallback(const UINT Event, const LPARAM lParam1
  */
 LRESULT CALLBACK CMyPlugin::WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-	switch (uMsg)
-	{
-	case WM_CREATE:
-		{
-			auto* const pcs = reinterpret_cast<LPCREATESTRUCT>(lParam);
-			auto* pThis = static_cast<CMyPlugin*>(pcs->lpCreateParams);
+    switch (uMsg)
+    {
+    case WM_CREATE:
+        {
+            auto* const pcs = reinterpret_cast<LPCREATESTRUCT>(lParam);
+            auto* pThis = static_cast<CMyPlugin*>(pcs->lpCreateParams);
 
-			::SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(pThis));
-			::SetTimer(hwnd, TvTestRPC_TIMER_ID, 3000, nullptr);
-		}
+            ::SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(pThis));
+            ::SetTimer(hwnd, TvTestRPC_TIMER_ID, 3000, nullptr);
+        }
 
-		return TRUE;
+        return true;
 
-	case WM_TIMER:
-		if (wParam == TvTestRPC_TIMER_ID)
-		{
-			auto* pThis = GetThis(hwnd);
-			pThis->UpdatePresence();
-		}
+    case WM_TIMER:
+        if (wParam == TvTestRPC_TIMER_ID)
+        {
+            auto* pThis = GetThis(hwnd);
+            pThis->UpdatePresence();
+        }
 
-		return 0;
+        return false;
 
-	default:
-		return ::DefWindowProc(hwnd, uMsg, wParam, lParam);
-	}
+    default:
+        return ::DefWindowProc(hwnd, uMsg, wParam, lParam);
+    }
 }
 
 /*
@@ -336,38 +350,38 @@ LRESULT CALLBACK CMyPlugin::WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM 
 INT_PTR CALLBACK CMyPlugin::SettingsDialogProc(const HWND hDlg, const UINT uMsg, const WPARAM wParam, LPARAM,
                                                void* pClientData)
 {
-	auto* pThis = static_cast<CMyPlugin*>(pClientData);
+    auto* pThis = static_cast<CMyPlugin*>(pClientData);
 
-	switch (uMsg)
-	{
-	case WM_INITDIALOG:
-		::CheckDlgButton(hDlg, IDC_CHECK1, pThis->m_channelMode ? BST_CHECKED : BST_UNCHECKED);
-		::CheckDlgButton(hDlg, IDC_CHECK2, pThis->m_timeMode ? BST_CHECKED : BST_UNCHECKED);
-		::CheckDlgButton(hDlg, IDC_CHECK3, pThis->m_logoMode ? BST_CHECKED : BST_UNCHECKED);
+    switch (uMsg)
+    {
+    case WM_INITDIALOG:
+        ::CheckDlgButton(hDlg, IDC_CHECK1, pThis->m_showChannelName ? BST_CHECKED : BST_UNCHECKED);
+        ::CheckDlgButton(hDlg, IDC_CHECK2, pThis->m_showEndTime ? BST_CHECKED : BST_UNCHECKED);
+        ::CheckDlgButton(hDlg, IDC_CHECK3, pThis->m_showChannelLogo ? BST_CHECKED : BST_UNCHECKED);
 
-		return TRUE;
+        return true;
 
-	case WM_COMMAND:
-		switch (wParam)
-		{
-		case IDOK:
-			pThis->m_channelMode = ::IsDlgButtonChecked(hDlg, IDC_CHECK1) == BST_CHECKED;
-			pThis->m_timeMode = ::IsDlgButtonChecked(hDlg, IDC_CHECK2) == BST_CHECKED;
-			pThis->m_logoMode = ::IsDlgButtonChecked(hDlg, IDC_CHECK3) == BST_CHECKED;
-			pThis->UpdatePresence();
+    case WM_COMMAND:
+        switch (wParam)
+        {
+        case IDOK:
+            pThis->m_showChannelName = ::IsDlgButtonChecked(hDlg, IDC_CHECK1) == BST_CHECKED;
+            pThis->m_showEndTime = ::IsDlgButtonChecked(hDlg, IDC_CHECK2) == BST_CHECKED;
+            pThis->m_showChannelLogo = ::IsDlgButtonChecked(hDlg, IDC_CHECK3) == BST_CHECKED;
+            pThis->UpdatePresence();
 
-		case IDCANCEL:
-			::EndDialog(hDlg, wParam);
+        case IDCANCEL:
+            ::EndDialog(hDlg, wParam);
 
-			return TRUE;
+            return true;
 
-		default:
-			return FALSE;
-		}
+        default:
+            return false;
+        }
 
-	default:
-		return FALSE;
-	}
+    default:
+        return false;
+    }
 }
 
 /*
@@ -375,5 +389,5 @@ INT_PTR CALLBACK CMyPlugin::SettingsDialogProc(const HWND hDlg, const UINT uMsg,
  */
 CMyPlugin* CMyPlugin::GetThis(const HWND hwnd)
 {
-	return reinterpret_cast<CMyPlugin*>(::GetWindowLongPtr(hwnd, GWLP_USERDATA));
+    return reinterpret_cast<CMyPlugin*>(::GetWindowLongPtr(hwnd, GWLP_USERDATA));
 }
