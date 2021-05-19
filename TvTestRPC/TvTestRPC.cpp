@@ -3,7 +3,8 @@
 #include <Shlwapi.h>
 #include <vector>
 #include "resource.h"
-#include "Utils.cpp"
+#include "Utils.h"
+#include "TvtPlay.h"
 
 #pragma comment(lib, "shlwapi.lib")
 
@@ -233,7 +234,17 @@ void CMyPlugin::UpdatePresence()
         auto start = SystemTime2Timet(Program.StartTime);
         auto end = start + Program.Duration;
         
-        presence.startTimestamp = start;
+        // TvtPlay が有効なとき
+    	auto tvtPlayHwnd = FindTvtPlayFrame();
+        if (tvtPlayHwnd)
+        {
+            auto pos = GetTvtPlayPositionSec(tvtPlayHwnd);
+        	auto now = time(nullptr);
+        	start = now + pos;
+        	end = now + Program.Duration;
+        }
+
+    	presence.startTimestamp = start;
         if (m_showEndTime) {
             presence.endTimestamp = end;
         }
