@@ -175,7 +175,7 @@
     <ClInclude Include="resource.h" />
     <ClInclude Include="strconv.h" />
     <ClInclude Include="stdafx.h" />
-    <ClInclude Include="Utils.h" />
+    <ClInclude Include="Utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="TvTestRPC.cpp">
