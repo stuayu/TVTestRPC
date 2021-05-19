@@ -2,16 +2,22 @@
 //
 
 #include "stdafx.h"
-#include <time.h>
+#include <ctime>
 #include <shlwapi.h>
 #include "resource.h"
 #include <vector>
 #pragma comment(lib,"shlwapi.lib")
 
+#define TvTestRPC_WINDOW_CLASS TEXT("TvTestRPC Window")
+#define TvTestRPC_TIMER_ID 1
+
 class CMyPlugin : public TVTest::CTVTestPlugin
 {
 	DiscordEventHandlers handlers{};
+	static time_t SystemTime2Timet(const SYSTEMTIME&);
 	static LRESULT CALLBACK EventCallback(UINT Event, LPARAM lParam1, LPARAM lParam2, void* pClientData);
+	static LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+	static CMyPlugin *GetThis(HWND hwnd);
 	static INT_PTR CALLBACK SettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam, void* pClientData);
 	bool ShowDialog(HWND hwndOwner);
 	TCHAR m_szIniFileName[MAX_PATH];
@@ -19,6 +25,8 @@ class CMyPlugin : public TVTest::CTVTestPlugin
 	bool conf_TimeMode = false;
 	bool conf_LogoMode = false;
 	bool conf_isFinalized = false;
+	HWND m_hwnd;
+	WORD m_EventId;
 	bool InitSettings();
 	bool pluginState = false;
 	void SaveConf();
@@ -27,8 +35,6 @@ class CMyPlugin : public TVTest::CTVTestPlugin
 	const std::vector<WORD> knownIds = { 32736, 32737, 32738, 32739, 32740, 32741, 3274, 32742, 32327, 32375, 32391};
 
 public:
-	time_t SystemTime2Timet(const SYSTEMTIME&);
-
 	DWORD GetVersion() override
 	{
 		return TVTEST_PLUGIN_VERSION_(0, 0, 1);
@@ -48,12 +54,46 @@ public:
 	{
 		InitDiscord();
 		m_pApp->SetEventCallback(EventCallback, this);
+
+		// ウィンドウクラスの登録
+		WNDCLASS wc{};
+		wc.style = 0;
+		wc.lpfnWndProc = WndProc;
+		wc.cbClsExtra = 0;
+		wc.cbWndExtra = 0;
+		wc.hInstance = g_hinstDLL;
+		wc.hIcon = nullptr;
+		wc.hCursor = nullptr;
+		wc.hbrBackground = nullptr;
+		wc.lpszMenuName = nullptr;
+		wc.lpszClassName = TvTestRPC_WINDOW_CLASS;
+		if (::RegisterClass(&wc) == 0) {
+			return false;
+		}
+
+		// ウィンドウの作成
+		m_hwnd = ::CreateWindowEx(
+			0, TvTestRPC_WINDOW_CLASS, nullptr, WS_POPUP,
+			0, 0, 0, 0, HWND_MESSAGE, nullptr, g_hinstDLL, this);
+		if (m_hwnd == nullptr)
+		{
+			return false;
+		}
+
 		return true;
 	}
+
 	bool Finalize() override
 	{
 		Discord_Shutdown();
 		SaveConf();
+
+		// ウィンドウ・タイマーの破棄
+		if (m_hwnd) {
+			::KillTimer(m_hwnd, TvTestRPC_TIMER_ID);
+			::DestroyWindow(m_hwnd);
+		}
+		
 		return true;
 	}
 };
@@ -77,29 +117,40 @@ void CMyPlugin::InitDiscord()
 void CMyPlugin::UpdateState()
 {
 	DiscordRichPresence discordPresence;
-	memset(&discordPresence, 0, sizeof(discordPresence));
-	TVTest::ProgramInfo Info;
-	TVTest::ServiceInfo Service;
-	TVTest::ChannelInfo ChannelInfo;
-	Info.Size = sizeof(Info);
-	Service.Size = sizeof(Service);
-	ChannelInfo.Size = sizeof(ChannelInfo);
+	memset(&discordPresence, 0, sizeof discordPresence);
+
+	TVTest::ProgramInfo Program{};
+	Program.Size = sizeof(Program);
 	wchar_t eventName[128];
 	wchar_t eventText[128];
 	wchar_t eventExtText[128];
-	Info.pszEventName = eventName;
-	Info.MaxEventName = sizeof(eventName) / sizeof(eventName[0]);
-	Info.pszEventText = eventText;
-	Info.MaxEventText = sizeof(eventText) / sizeof(eventText[0]);
-	Info.pszEventExtText = eventExtText;
-	Info.MaxEventExtText = sizeof(eventExtText) / sizeof(eventExtText[0]);
+	Program.pszEventName = eventName;
+	Program.MaxEventName = sizeof eventName / sizeof eventName[0];
+	Program.pszEventText = eventText;
+	Program.MaxEventText = sizeof eventText / sizeof eventText[0];
+	Program.pszEventExtText = eventExtText;
+	Program.MaxEventExtText = sizeof eventExtText / sizeof eventExtText[0];
 	std::string channelName;
 	std::string eventNamed;
 
-	if (m_pApp->GetCurrentProgramInfo(&Info)) {
-		eventNamed = wide_to_utf8(Info.pszEventName);
-		auto start = SystemTime2Timet(Info.StartTime);
-		auto end = SystemTime2Timet(Info.StartTime) + Info.Duration;
+	TVTest::ServiceInfo Service{};
+	Service.Size = sizeof(Service);
+
+	TVTest::ChannelInfo ChannelInfo{};
+	ChannelInfo.Size = sizeof(ChannelInfo);
+
+	if (m_pApp->GetCurrentProgramInfo(&Program)) {
+		// 前回と同じ Event ID であれば更新する必要はない
+		if (m_EventId == Program.EventID)
+		{
+			return;
+		}
+		m_EventId = Program.EventID;
+		
+		eventNamed = wide_to_utf8(Program.pszEventName);
+
+		auto start = SystemTime2Timet(Program.StartTime);
+		auto end = SystemTime2Timet(Program.StartTime) + Program.Duration;
 		discordPresence.startTimestamp = start;
 		if (!conf_TimeMode) discordPresence.endTimestamp = end;
 	}
@@ -119,7 +170,7 @@ void CMyPlugin::UpdateState()
 			auto netId = std::to_string(id);
 			discordPresence.largeImageKey = netId.c_str();
 			discordPresence.smallImageKey = "tvtest";
-			discordPresence.smallImageText = "TVTest";
+			discordPresence.smallImageText = "TvTest";
 		}
 		else {
 			discordPresence.largeImageKey = "tvtest";
@@ -139,7 +190,6 @@ void CMyPlugin::UpdateState()
 	discordPresence.spectateSecret = "";
 	discordPresence.instance = 0;
 	Discord_UpdatePresence(&discordPresence);
-
 }
 
 void CMyPlugin::SaveConf() {
@@ -182,15 +232,19 @@ bool CMyPlugin::ShowDialog(HWND hwndOwner) {
 
 INT_PTR CALLBACK CMyPlugin::SettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam, void* pClientData) {
 	CMyPlugin* pThis = static_cast<CMyPlugin*>(pClientData);
+
 	switch (uMsg)
 	{
 	case WM_INITDIALOG:
 		::CheckDlgButton(hDlg, IDC_CHECK1, pThis->conf_ChannelMode ? BST_CHECKED : BST_UNCHECKED);
 		::CheckDlgButton(hDlg, IDC_CHECK2, pThis->conf_TimeMode ? BST_CHECKED : BST_UNCHECKED);
 		::CheckDlgButton(hDlg, IDC_CHECK3, pThis->conf_LogoMode ? BST_CHECKED : BST_UNCHECKED);
+
 		return TRUE;
+
 	case WM_COMMAND:
-		switch (LOWORD(wParam)) {
+		switch (wParam)
+		{
 		case IDOK:
 			pThis->conf_ChannelMode = ::IsDlgButtonChecked(hDlg, IDC_CHECK1) == BST_CHECKED;
 			pThis->conf_TimeMode = ::IsDlgButtonChecked(hDlg, IDC_CHECK2) == BST_CHECKED;
@@ -200,16 +254,16 @@ INT_PTR CALLBACK CMyPlugin::SettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam,
 			::EndDialog(hDlg, LOWORD(wParam));
 			return TRUE;
 		}
+
 	default:
-		break;
 		return FALSE;
 	}
-	return FALSE;
 }
 
 LRESULT CALLBACK CMyPlugin::EventCallback(UINT Event, LPARAM lParam1, LPARAM lParam2, void* pClientData)
 {
-	CMyPlugin* pThis = static_cast<CMyPlugin*>(pClientData);
+	auto *pThis = static_cast<CMyPlugin*>(pClientData);
+	
 	switch (Event)
 	{
 	case TVTest::EVENT_PLUGINENABLE:
@@ -222,17 +276,59 @@ LRESULT CALLBACK CMyPlugin::EventCallback(UINT Event, LPARAM lParam1, LPARAM lPa
 			pThis->pluginState = false;
 			Discord_ClearPresence();
 		}
+		
 		return TRUE;
+
 	case TVTest::EVENT_SERVICECHANGE:
 	case TVTest::EVENT_CHANNELCHANGE:
 	case TVTest::EVENT_SERVICEUPDATE:
-	case TVTest::EVENT_PANELITEM_NOTIFY:
-	case TVTest::EVENT_PREVIEWCHANGE:
-	case TVTest::EVENT_STATUSITEM_DRAW:
 		pThis->UpdateState();
 		return TRUE;
+
 	case TVTest::EVENT_PLUGINSETTINGS:
 		return pThis->ShowDialog(reinterpret_cast<HWND>(lParam1));
+
+	default:
+		return 0;
 	}
-	return 0;
+}
+
+/*
+ * ウィンドウプロシージャ
+ * タイマー処理を行う
+ */
+LRESULT CALLBACK CMyPlugin::WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+	switch (uMsg) {
+	case WM_CREATE:
+		{
+			auto pcs = reinterpret_cast<LPCREATESTRUCT>(lParam);
+			auto* pThis = static_cast<CMyPlugin*>(pcs->lpCreateParams);
+
+			::SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(pThis));
+			::SetTimer(hwnd, TvTestRPC_TIMER_ID, 3000, nullptr);
+		}
+
+		return TRUE;
+
+	case WM_TIMER:
+		if (wParam == TvTestRPC_TIMER_ID)
+		{
+			auto *pThis = GetThis(hwnd);
+			pThis->UpdateState();
+		}
+		
+		return 0;
+		
+	default:
+		return ::DefWindowProc(hwnd, uMsg, wParam, lParam);
+	}
+}
+
+/*
+ * ウィンドウハンドルから this を取得する
+ */
+CMyPlugin *CMyPlugin::GetThis(HWND hwnd)
+{
+	return reinterpret_cast<CMyPlugin*>(::GetWindowLongPtr(hwnd, GWLP_USERDATA));
 }
