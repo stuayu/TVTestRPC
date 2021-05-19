@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #include "resource.h"
 
@@ -13,7 +13,7 @@
 #undef APSTUDIO_READONLY_SYMBOLS
 
 /////////////////////////////////////////////////////////////////////////////
-// 日本語 (日本) resources
+// ���{�� (���{) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_JPN)
 LANGUAGE LANG_JAPANESE, SUBLANG_DEFAULT
@@ -52,16 +52,16 @@ END
 
 IDD_DIALOG1 DIALOGEX 0, 0, 166, 112
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "TvTestRPCの設定"
+CAPTION "TvTestRPC�̐ݒ�"
 FONT 9, "Meiryo UI", 400, 0, 0x0
 BEGIN
     DEFPUSHBUTTON   "OK",IDOK,55,91,50,14
-    PUSHBUTTON      "キャンセル",IDCANCEL,109,91,50,14
-    CONTROL         "サービス名の代わりにチャンネル名を表示する",IDC_CHECK1,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,5,2,138,10
-    LTEXT           "※局ロゴの通知は、関東広域とMX、tvk、チバテレのみ対応。",IDC_STATIC,7,69,139,19
-    CONTROL         "番組の経過時間の代わりに残り時間を表示する",IDC_CHECK2,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,41,149,16
-    CONTROL         "局ロゴを通知する",IDC_CHECK3,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,58,67,10
-    LTEXT           "※チャンネル名はBonDriverに依存します。\n　TvtPlayなどでチャンネルを正しく通知したい場合は\n　チェックを外してください。",IDC_STATIC,7,14,149,24
+    PUSHBUTTON      "�L�����Z��",IDCANCEL,109,91,50,14
+    CONTROL         "�T�[�r�X���̑���Ƀ`�����l������\������",IDC_CHECK1,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,5,2,138,10
+    LTEXT           "���ǃ��S�̒ʒm�́A�֓��L���MX�Atvk�A�`�o�e���̂ݑΉ��B",IDC_STATIC,7,69,139,19
+    CONTROL         "�ԑg�̌o�ߎ��Ԃ̑���Ɏc�莞�Ԃ�\������",IDC_CHECK2,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,41,149,16
+    CONTROL         "�ǃ��S��\������",IDC_CHECK3,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,58,67,10
+    LTEXT           "���`�����l������BonDriver�Ɉˑ����܂��B\n�@TvtPlay�ȂǂŃ`�����l���𐳂����ʒm�������ꍇ��\n�@�`�F�b�N���O���Ă��������B",IDC_STATIC,7,14,149,24
 END
 
 
@@ -92,7 +92,7 @@ BEGIN
     0
 END
 
-#endif    // 日本語 (日本) resources
+#endif    // ���{�� (���{) resources
 /////////////////////////////////////////////////////////////////////////////
 
 

@@ -22,6 +22,7 @@ class CMyPlugin final : public TVTest::CTVTestPlugin
     bool m_showChannelName = false;
     bool m_showEndTime = false;
     bool m_showChannelLogo = false;
+	bool m_convertToHalfWidth = false;
     bool m_isReady = false;
 
     bool LoadConfig();
@@ -137,6 +138,7 @@ bool CMyPlugin::LoadConfig()
     m_showChannelName = ::GetPrivateProfileInt(L"Settings", L"ShowChannelName", m_showChannelName, m_iniFileName) != 0;
     m_showEndTime = ::GetPrivateProfileInt(L"Settings", L"ShowEndTime", m_showEndTime, m_iniFileName) != 0;
     m_showChannelLogo = ::GetPrivateProfileInt(L"Settings", L"ShowChannelLogo", m_showChannelLogo, m_iniFileName) != 0;
+	m_convertToHalfWidth = ::GetPrivateProfileInt(L"Settings", L"ConvertToHalfWidth", m_convertToHalfWidth, m_iniFileName) != 0;
     m_isReady = true;
 
     return true;
@@ -151,7 +153,7 @@ void CMyPlugin::SaveConfig() const
     {
         struct IntString
         {
-            TCHAR m_buffer[16]{};
+	        wchar_t m_buffer[16];
 
             explicit IntString(const int value)
             {
@@ -167,6 +169,7 @@ void CMyPlugin::SaveConfig() const
         ::WritePrivateProfileString(L"Settings", L"ShowChannelName", IntString(m_showChannelName), m_iniFileName);
         ::WritePrivateProfileString(L"Settings", L"ShowEndTime", IntString(m_showEndTime), m_iniFileName);
         ::WritePrivateProfileString(L"Settings", L"ShowChannelLogo", IntString(m_showChannelLogo), m_iniFileName);
+    	::WritePrivateProfileString(L"Settings", L"ConvertToHalfWidth", IntString(m_convertToHalfWidth), m_iniFileName);
     }
 }
 
@@ -209,11 +212,18 @@ void CMyPlugin::UpdatePresence()
     TVTest::ServiceInfo Service{};
     Service.Size = sizeof Service;
 
-    TVTest::ChannelInfo ChannelInfo{};
-    ChannelInfo.Size = sizeof ChannelInfo;
+    TVTest::ChannelInfo Channel{};
+    Channel.Size = sizeof Channel;
 
     std::string eventName;
     std::string channelName;
+
+	char tvtestVersion[128];
+	auto version = m_pApp->GetVersion();
+    auto major = TVTest::GetMajorVersion(version);
+    auto minor = TVTest::GetMinorVersion(version);
+    auto build = TVTest::GetBuildVersion(version);
+    sprintf_s(tvtestVersion, "TVTest %lu.%lu.%lu", major, minor, build);
 
     if (m_pApp->GetCurrentProgramInfo(&Program))
     {
@@ -224,7 +234,7 @@ void CMyPlugin::UpdatePresence()
         }
         m_eventId = Program.EventID;
 
-        eventName = wide_to_utf8(Program.pszEventName);
+        eventName = WideToUTF8(Program.pszEventName, m_convertToHalfWidth);
 
         auto start = SystemTime2Timet(Program.StartTime);
         auto end = start + Program.Duration;
@@ -235,41 +245,35 @@ void CMyPlugin::UpdatePresence()
         }
     }
 
-    if (m_pApp->GetServiceInfo(0, &Service) && m_pApp->GetCurrentChannelInfo(&ChannelInfo))
+    if (m_pApp->GetServiceInfo(0, &Service) && m_pApp->GetCurrentChannelInfo(&Channel))
     {
         if (m_showChannelName)
         {
-            channelName = wide_to_utf8(ChannelInfo.szChannelName);
+            channelName = WideToUTF8(Channel.szChannelName, m_convertToHalfWidth);
         }
         else
         {
-            channelName = wide_to_utf8(Service.szServiceName);
+            channelName = WideToUTF8(Service.szServiceName, m_convertToHalfWidth);
         }
 
-        auto hasLogo = find(knownIds.begin(), knownIds.end(), ChannelInfo.NetworkID) != knownIds.end();
+        auto hasLogo = find(knownIds.begin(), knownIds.end(), Channel.NetworkID) != knownIds.end();
         if (hasLogo && m_showChannelLogo)
         {
-            auto networkId = std::to_string(ChannelInfo.NetworkID);
-            discordPresence.largeImageKey = networkId.c_str();
+            auto networkId = std::to_string(Channel.NetworkID);
+            
             discordPresence.smallImageKey = "tvtest";
-
-            auto version = m_pApp->GetVersion();
-            auto major = TVTest::GetMajorVersion(version);
-            auto minor = TVTest::GetMinorVersion(version);
-            auto build = TVTest::GetBuildVersion(version);
-
-            char smallImageText[128];
-            sprintf_s(smallImageText, "TVTest %lu.%lu.%lu", major, minor, build);
-            discordPresence.smallImageText = smallImageText;
+            discordPresence.smallImageText = tvtestVersion;
+        	discordPresence.largeImageKey = networkId.c_str();
+        	discordPresence.largeImageText = channelName.c_str();
         }
         else
         {
             discordPresence.largeImageKey = "tvtest";
+        	discordPresence.largeImageText = tvtestVersion;
         }
     }
-
+	
     discordPresence.details = channelName.c_str();
-    discordPresence.largeImageText = channelName.c_str();
     discordPresence.state = eventName.c_str();
     Discord_UpdatePresence(&discordPresence);
 }
@@ -368,7 +372,8 @@ INT_PTR CALLBACK CMyPlugin::SettingsDialogProc(const HWND hDlg, const UINT uMsg,
             pThis->m_showChannelName = ::IsDlgButtonChecked(hDlg, IDC_CHECK1) == BST_CHECKED;
             pThis->m_showEndTime = ::IsDlgButtonChecked(hDlg, IDC_CHECK2) == BST_CHECKED;
             pThis->m_showChannelLogo = ::IsDlgButtonChecked(hDlg, IDC_CHECK3) == BST_CHECKED;
-            pThis->UpdatePresence();
+
+        	pThis->UpdatePresence();
 
         case IDCANCEL:
             ::EndDialog(hDlg, wParam);
