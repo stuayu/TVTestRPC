@@ -140,6 +140,29 @@ inline std::string GetGRServiceLogoKey(const TVTest::ServiceInfo Service)
     
     switch (Service.ServiceID)
     {
+    case 1040:   // 関東: 日テレ
+        return "gr_1040";
+    case 1064:   // 関東: テレビ朝日
+        return "gr_1064";
+    case 1048:   // 関東: TBS
+        return "gr_1048";
+    case 1072:   // 関東: テレビ東京
+        return "gr_1072";
+    case 1056:   // 関東: フジテレビ
+        return LOGO_DEFAULT;
+
+    case 23608:  // 東京: TOKYO MX
+        return "gr_23608";
+
+    case 17440:  // 宮城: ミヤギテレビ
+        return "gr_17440";
+    case 17448:  // 宮城: KHB 東日本放送
+        return "gr_17448";
+    case 17424:  // 宮城: TBC 東北放送
+        return "gr_17424";
+    case 17432:  // 宮城: 仙台放送
+        return LOGO_DEFAULT;
+
     default:
         return LOGO_DEFAULT;
     }
@@ -177,12 +200,31 @@ inline std::string GetBSServiceLogoKey(const TVTest::ServiceInfo Service)
     case 172:
     case 173:
         return "bs_171";
+    // BSフジ
+    case 181:
+    case 182:
+    case 183:
+        return LOGO_DEFAULT;
+    // WOWOW
+    case 191:
+    case 192:
+    case 193:
+        return "bs_191";
+    // スターチャンネル
+    case 200:
+    case 201:
+    case 202:
+        return "bs_200";
     // BS11イレブン
     case 211:
         return "bs_211";
     // BS12トゥエルビ
     case 212:
         return "bs_212";
+    // 放送大学
+    case 231:
+    case 232:
+        return "bs_231";
     default:
         return LOGO_DEFAULT;
     }
