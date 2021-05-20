@@ -149,7 +149,7 @@ inline std::string GetGRServiceLogoKey(const TVTest::ServiceInfo Service)
     case 1072:   // 関東: テレビ東京
         return "gr_1072";
     case 1056:   // 関東: フジテレビ
-        return LOGO_DEFAULT;
+        return "gr_1056";
 
     case 23608:  // 東京: TOKYO MX
         return "gr_23608";
@@ -161,7 +161,7 @@ inline std::string GetGRServiceLogoKey(const TVTest::ServiceInfo Service)
     case 17424:  // 宮城: TBC 東北放送
         return "gr_17424";
     case 17432:  // 宮城: 仙台放送
-        return LOGO_DEFAULT;
+        return "gr_17432";
 
     default:
         return LOGO_DEFAULT;
@@ -204,7 +204,7 @@ inline std::string GetBSServiceLogoKey(const TVTest::ServiceInfo Service)
     case 181:
     case 182:
     case 183:
-        return LOGO_DEFAULT;
+        return "bs_181";
     // WOWOW
     case 191:
     case 192:
