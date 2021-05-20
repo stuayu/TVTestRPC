@@ -163,6 +163,18 @@ inline std::string GetGRServiceLogoKey(const WORD serviceId)
     case 17432:  // 宮城: 仙台放送
         return "gr_17432";
 
+    case 37904:  // 富山: KNB
+        return "gr_37904";
+    case 34840:  // 石川: HAB
+        return "gr_34840";
+    case 37920:  // 富山: チューリップテレビ
+        return "gr_37920";
+    case 37912:  // 富山: 富山テレビ放送
+        return "gr_37912";
+
+    case 24632:  // 神奈川: tvk
+        return "gr_24632";
+
     default:
         return LOGO_DEFAULT;
     }
@@ -224,7 +236,35 @@ inline std::string GetBSServiceLogoKey(const WORD serviceId)
     // 放送大学
     case 231:
     case 232:
+    case 531:
         return "bs_231";
+    // グリーンチャンネル
+    case 234:
+        return "bs_234";
+    // BSアニマックス
+    case 236:
+        return "bs_236";
+    // BSスカパー！
+    case 241:
+        return "bs_241";
+    // J SPORTS
+    case 242:
+    case 243:
+    case 244:
+    case 245:
+        return "bs_242";
+    // BS釣りビジョン
+    case 251:
+        return "bs_251";
+    // WOWOWプラス
+    case 252:
+        return "bs_252";
+    // 日本映画専門ch
+    case 255:
+        return "bs_255";
+    // ディズニーch
+    case 256:
+        return "bs_256";
     default:
         return LOGO_DEFAULT;
     }

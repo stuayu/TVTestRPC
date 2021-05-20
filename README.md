@@ -2,12 +2,31 @@
 
 [![latest](https://github.com/SlashNephy/TvTestRPC/actions/workflows/latest.yml/badge.svg)](https://github.com/SlashNephy/TvTestRPC/actions/workflows/latest.yml)
 
-TVTest で Discord Rich Presence を使えるようにするプラグインです。  
-ビルド済み成果物は [ワークフロー](https://github.com/SlashNephy/TvTestRPC/actions/workflows/latest.yml) のビルド履歴 -> Artifacts からダウンロードできます。
+TVTest で Discord Rich Presence を使えるようにするプラグインです。
 
 [![screenshot.png](https://raw.githubusercontent.com/SlashNephy/TvTestRPC/dev/docs/screenshot.png)](https://github.com/SlashNephy/TvTestRPC)
 
-`TvTestRPC.ini`
+## Get Started
+
+ビルド済み成果物は [ワークフロー](https://github.com/SlashNephy/TvTestRPC/actions/workflows/latest.yml) のビルド履歴 -> Artifacts からダウンロードできます。
+
+## Features
+
+[本家さんバージョン](https://github.com/noriokun4649/TvTestRPC) と同等ですが, 以下の相違点があります。
+
+- TvtPlay プラグインと連携し, ファイル再生時にも経過時間を表示
+
+- 東京近辺の地上波だけでなく, NHK や BS, 一部の地域の地上波のロゴ表示にも対応  
+対応している局は NHK (総合, 教育), 東京・宮城・富山・神奈川の地上波, BS の無料放送, BS の一部の有料放送です。[assets](https://github.com/SlashNephy/TvTestRPC/tree/dev/assets) 以下にロゴ一覧があります。
+
+- 視聴中の番組が終了したときに Rich Presence が更新されないバグを修正  
+タイマー処理を回し, EventID が異なっていれば更新するようにしています。
+
+- 全角文字を半角に変換するオプションを追加
+
+## Configuration
+
+`TvTestRPC.ini` を編集してください。
 
 ```ini
 [Settings]
@@ -16,8 +35,6 @@ TVTest で Discord Rich Presence を使えるようにするプラグインで�
 ShowEndTime=1
 
 ; チャンネルロゴを表示します。
-; 対応している局は 東京・宮城の地上波, BS の無料放送, BS の一部の有料放送です。
-; https://github.com/SlashNephy/TvTestRPC/tree/dev/assets に一覧があります。
 ShowChannelLogo=1
 
 ; 番組名やチャンネル名の全角文字を半角に変換します。
