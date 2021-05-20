@@ -2,9 +2,9 @@
 #include <ctime>
 #include <Shlwapi.h>
 #include <vector>
-#include "resource.h"
-#include "Utils.h"
+#include "Logo.h"
 #include "TvtPlay.h"
+#include "Utils.h"
 
 #pragma comment(lib, "shlwapi.lib")
 
@@ -18,7 +18,6 @@ class CMyPlugin final : public TVTest::CTVTestPlugin
     HWND m_hwnd{};
     WORD m_eventId{};
 
-    bool m_showChannelName = false;
     bool m_showEndTime = false;
     bool m_showChannelLogo = false;
     bool m_convertToHalfWidth = false;
@@ -26,13 +25,11 @@ class CMyPlugin final : public TVTest::CTVTestPlugin
 
     bool LoadConfig();
     void SaveConfig() const;
-    bool ShowDialog(HWND hwndOwner);
 
     void UpdatePresence();
 
     static LRESULT CALLBACK EventCallback(UINT Event, LPARAM lParam1, LPARAM lParam2, void* pClientData);
     static LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-    static INT_PTR CALLBACK SettingsDialogProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam, void* pClientData);
     static CMyPlugin* GetThis(HWND hwnd);
 
 public:
@@ -50,7 +47,6 @@ public:
     bool GetPluginInfo(TVTest::PluginInfo* pInfo) override
     {
         pInfo->Type = TVTest::PLUGIN_TYPE_NORMAL;
-        pInfo->Flags = TVTest::PLUGIN_FLAG_HASSETTINGS;
         pInfo->pszPluginName = L"Discord Rich Presence";
         pInfo->pszCopyright = L"© 2021 Nep, 2019-2020 noriokun4649";
         pInfo->pszDescription = L"Discord Rich Presence を表示します。";
@@ -134,7 +130,6 @@ bool CMyPlugin::LoadConfig()
     ::GetModuleFileName(g_hinstDLL, m_iniFileName, MAX_PATH);
     ::PathRenameExtension(m_iniFileName, L".ini");
 
-    m_showChannelName = ::GetPrivateProfileInt(L"Settings", L"ShowChannelName", m_showChannelName, m_iniFileName) != 0;
     m_showEndTime = ::GetPrivateProfileInt(L"Settings", L"ShowEndTime", m_showEndTime, m_iniFileName) != 0;
     m_showChannelLogo = ::GetPrivateProfileInt(L"Settings", L"ShowChannelLogo", m_showChannelLogo, m_iniFileName) != 0;
     m_convertToHalfWidth = ::GetPrivateProfileInt(L"Settings", L"ConvertToHalfWidth", m_convertToHalfWidth, m_iniFileName) != 0;
@@ -165,27 +160,10 @@ void CMyPlugin::SaveConfig() const
             }
         };
 
-        ::WritePrivateProfileString(L"Settings", L"ShowChannelName", IntString(m_showChannelName), m_iniFileName);
         ::WritePrivateProfileString(L"Settings", L"ShowEndTime", IntString(m_showEndTime), m_iniFileName);
         ::WritePrivateProfileString(L"Settings", L"ShowChannelLogo", IntString(m_showChannelLogo), m_iniFileName);
         ::WritePrivateProfileString(L"Settings", L"ConvertToHalfWidth", IntString(m_convertToHalfWidth), m_iniFileName);
     }
-}
-
-/*
- * 設定ダイアログを表示する
- */
-bool CMyPlugin::ShowDialog(const HWND hwndOwner)
-{
-    TVTest::ShowDialogInfo Info{};
-    Info.Flags = 0;
-    Info.hinst = g_hinstDLL;
-    Info.pszTemplate = MAKEINTRESOURCE(IDD_DIALOG1);
-    Info.pMessageFunc = SettingsDialogProc;
-    Info.pClientData = this;
-    Info.hwndOwner = hwndOwner;
-
-    return m_pApp->ShowDialog(&Info) == IDOK;
 }
 
 /*
@@ -218,7 +196,7 @@ void CMyPlugin::UpdatePresence()
     Service.Size = sizeof Service;
 
     std::string eventName;
-    std::string channelName;
+    std::string serviceName;
 
     if (m_pApp->GetCurrentProgramInfo(&Program))
     {
@@ -250,28 +228,24 @@ void CMyPlugin::UpdatePresence()
         }
     }
 
-    if (m_showChannelLogo && m_pApp->GetCurrentChannelInfo(&Channel))
+    if (m_pApp->GetServiceInfo(0, &Service))
     {
-        channelName = WideToUTF8(Channel.szChannelName, m_convertToHalfWidth);
+        serviceName = WideToUTF8(Service.szServiceName, m_convertToHalfWidth);
 
-        if (m_showChannelLogo && HasLogo(Channel.NetworkID))
+        if (m_showChannelLogo)
         {
-            auto networkId = std::to_string(Channel.NetworkID);
-            presence.largeImageKey = networkId.c_str();
+            auto logoKey = GetServiceLogoKey(Service);
+            presence.largeImageKey = logoKey.c_str();
         }
-    }
-    else if (m_pApp->GetServiceInfo(0, &Service))
-    {
-        channelName = WideToUTF8(Service.szServiceName, m_convertToHalfWidth);
     }
     else
     {
         return;
     }
     
-    presence.details = channelName.c_str();
+    presence.details = serviceName.c_str();
     presence.state = eventName.c_str();
-    presence.largeImageText = channelName.c_str();
+    presence.largeImageText = serviceName.c_str();
 
     char tvtestVersion[128];
     auto version = m_pApp->GetVersion();
@@ -314,9 +288,6 @@ LRESULT CALLBACK CMyPlugin::EventCallback(const UINT Event, const LPARAM lParam1
 
         return true;
 
-    case TVTest::EVENT_PLUGINSETTINGS:
-        return pThis->ShowDialog(reinterpret_cast<HWND>(lParam1));
-
     default:
         return false;
     }
@@ -352,47 +323,6 @@ LRESULT CALLBACK CMyPlugin::WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM 
 
     default:
         return ::DefWindowProc(hwnd, uMsg, wParam, lParam);
-    }
-}
-
-/*
- * 設定ダイアログプロシージャ
- */
-INT_PTR CALLBACK CMyPlugin::SettingsDialogProc(const HWND hDlg, const UINT uMsg, const WPARAM wParam, LPARAM,
-                                               void* pClientData)
-{
-    auto* pThis = static_cast<CMyPlugin*>(pClientData);
-
-    switch (uMsg)
-    {
-    case WM_INITDIALOG:
-        ::CheckDlgButton(hDlg, IDC_CHECK1, pThis->m_showChannelName ? BST_CHECKED : BST_UNCHECKED);
-        ::CheckDlgButton(hDlg, IDC_CHECK2, pThis->m_showEndTime ? BST_CHECKED : BST_UNCHECKED);
-        ::CheckDlgButton(hDlg, IDC_CHECK3, pThis->m_showChannelLogo ? BST_CHECKED : BST_UNCHECKED);
-
-        return true;
-
-    case WM_COMMAND:
-        switch (wParam)
-        {
-        case IDOK:
-            pThis->m_showChannelName = ::IsDlgButtonChecked(hDlg, IDC_CHECK1) == BST_CHECKED;
-            pThis->m_showEndTime = ::IsDlgButtonChecked(hDlg, IDC_CHECK2) == BST_CHECKED;
-            pThis->m_showChannelLogo = ::IsDlgButtonChecked(hDlg, IDC_CHECK3) == BST_CHECKED;
-
-            pThis->UpdatePresence();
-
-        case IDCANCEL:
-            ::EndDialog(hDlg, wParam);
-
-            return true;
-
-        default:
-            return false;
-        }
-
-    default:
-        return false;
     }
 }
 

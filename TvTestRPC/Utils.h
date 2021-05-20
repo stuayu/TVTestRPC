@@ -48,11 +48,3 @@ inline std::string WideToUTF8(TCHAR* source, const bool asHalfWidth)
     
     return wide_to_utf8(source);
 }
-
-const std::vector<WORD> knownNetworkIds = {
-};
-
-inline bool HasLogo(const WORD networkId)
-{
-    return find(knownNetworkIds.begin(), knownNetworkIds.end(), networkId) != knownNetworkIds.end();
-}
