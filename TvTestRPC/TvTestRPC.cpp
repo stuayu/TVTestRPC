@@ -178,16 +178,13 @@ void CMyPlugin::UpdatePresence()
     Program.Size = sizeof Program;
     wchar_t pszEventName[128];
     Program.pszEventName = pszEventName;
-    Program.MaxEventName = sizeof pszEventName / sizeof pszEventName[0];
+    Program.MaxEventName = _countof(pszEventName);
     wchar_t pszEventText[128];
     Program.pszEventText = pszEventText;
-    Program.MaxEventText = sizeof pszEventText / sizeof pszEventText[0];
+    Program.MaxEventText = _countof(pszEventText);
     wchar_t pszEventExtText[128];
     Program.pszEventExtText = pszEventExtText;
-    Program.MaxEventExtText = sizeof pszEventExtText / sizeof pszEventExtText[0];
-
-    TVTest::ChannelInfo Channel{};
-    Channel.Size = sizeof Channel;
+    Program.MaxEventExtText = _countof(pszEventExtText);
 
     TVTest::ServiceInfo Service{};
     Service.Size = sizeof Service;
@@ -211,8 +208,8 @@ void CMyPlugin::UpdatePresence()
         auto start = SystemTime2Timet(Program.StartTime);
         auto end = start + Program.Duration;
         
-        // TvtPlay が有効なとき
-    	auto tvtPlayHwnd = FindTvtPlayFrame();
+        // TvtPlay が有効なときは現在時刻を基準にする
+        auto tvtPlayHwnd = FindTvtPlayFrame();
         if (tvtPlayHwnd)
         {
             auto pos = GetTvtPlayPositionSec(tvtPlayHwnd);
@@ -239,7 +236,7 @@ void CMyPlugin::UpdatePresence()
             {
                 auto logoKey = GetServiceLogoKey(Service);
                 presence.largeImageKey = logoKey.c_str();
-                presence.largeImageText = serviceName.c_str();
+                presence.largeImageText = eventText.c_str();
             }
 
             foundService = true;
@@ -248,12 +245,11 @@ void CMyPlugin::UpdatePresence()
     }
     if (!foundService)
     {
-        m_pApp->AddLog(L"Failed to get service info");
         return;
     }
     
-    presence.details = eventName.c_str();
-    presence.state = eventText.c_str();
+    presence.details = serviceName.c_str();
+    presence.state = eventName.c_str();
 
     char tvtestVersion[128];
     auto version = m_pApp->GetVersion();
