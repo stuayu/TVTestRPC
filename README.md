@@ -1,8 +1,27 @@
 # TvTestRPC
 
-TVTest で Discord Rich Presence が使えるようになるプラグインです。
+[![latest](https://github.com/SlashNephy/TvTestRPC/actions/workflows/latest.yml/badge.svg)](https://github.com/SlashNephy/TvTestRPC/actions/workflows/latest.yml)
+
+TVTest で Discord Rich Presence を使えるようにするプラグインです。
 
 [![screenshot.png](https://raw.githubusercontent.com/SlashNephy/TvTestRPC/dev/docs/screenshot.png)](https://github.com/SlashNephy/TvTestRPC)
+
+`TvTestRPC.ini`
+
+```ini
+[Settings]
+; 番組の終了時刻を Discord に通知します。
+; カウントダウンされるようになります。
+ShowEndTime=1
+
+; チャンネルロゴを表示します。
+; 対応している局は 東京・宮城の地上波, BS の無料放送, BS の一部の有料放送です。
+; https://github.com/SlashNephy/TvTestRPC/tree/dev/assets に一覧があります。
+ShowChannelLogo=1
+
+; 番組名やチャンネル名の全角文字を半角に変換します。
+ConvertToHalfWidth=1
+```
 
 ## Acknowledgements
 
