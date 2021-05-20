@@ -219,8 +219,8 @@ inline std::string GetBSServiceLogoKey(const WORD serviceId)
     case 211:
         return "bs_211";
     // BS12トゥエルビ
-    case 212:
-        return "bs_212";
+    case 222:
+        return "bs_222";
     // 放送大学
     case 231:
     case 232:
