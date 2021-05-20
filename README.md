@@ -1,10 +1,15 @@
 # TvTestRPC
-![GitHub all releases](https://img.shields.io/github/downloads/noriokun4649/TvTestRPC/total) ![GitHub](https://img.shields.io/github/license/noriokun4649/TvTestRPC) ![GitHub release (latest by date)](https://img.shields.io/github/v/release/noriokun4649/TvTestRPC)  
-TvTestでDiscordのRPCが使えるようになるプラグインです。
 
-このプログラムで利用されているOSSライセンス
+TVTest で Discord Rich Presence が使えるようになるプラグインです。
 
-strconv.h - MIT License
+[![screenshot.png](https://raw.githubusercontent.com/SlashNephy/TvTestRPC/dev/docs/screenshot.png)](https://github.com/SlashNephy/TvTestRPC)
+
+## Acknowledgements
+
+### strconv.h
+
+```
+MIT License
 
 Copyright (c) 2019 JavaCommons
 
@@ -25,10 +30,12 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+```
 
--------------------------------------------------------------------------------
+### discord-rpc
 
-discord-rpc - MIT License
+```
+MIT License
 
 Copyright 2017 Discord, Inc.
 
@@ -49,3 +56,4 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+```
