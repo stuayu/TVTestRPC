@@ -2,7 +2,8 @@
 
 [![latest](https://github.com/SlashNephy/TvTestRPC/actions/workflows/latest.yml/badge.svg)](https://github.com/SlashNephy/TvTestRPC/actions/workflows/latest.yml)
 
-TVTest で Discord Rich Presence を使えるようにするプラグインです。
+TVTest で Discord Rich Presence を使えるようにするプラグインです。  
+ビルド済み成果物は [ワークフロー](https://github.com/SlashNephy/TvTestRPC/actions/workflows/latest.yml) のビルド履歴 -> Artifacts からダウンロードできます。
 
 [![screenshot.png](https://raw.githubusercontent.com/SlashNephy/TvTestRPC/dev/docs/screenshot.png)](https://github.com/SlashNephy/TvTestRPC)
 
