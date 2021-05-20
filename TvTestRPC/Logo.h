@@ -9,9 +9,9 @@
 /*
  * 対象のサービスが NHK総合 であるかどうか判定する
  */
-inline bool IsNHKGService(const TVTest::ServiceInfo Service)
+inline bool IsNHKGService(const WORD serviceId)
 {
-    switch (Service.ServiceID)
+    switch (serviceId)
     {
     case 1024:   // 関東広域: NHK総合・東京
     case 10240:  // 北海道(札幌): NHK総合・札幌
@@ -73,9 +73,9 @@ inline bool IsNHKGService(const TVTest::ServiceInfo Service)
 /*
  * 対象のサービスが NHK教育 であるかどうか判定する
  */
-inline bool isNHKEService(const TVTest::ServiceInfo Service)
+inline bool isNHKEService(const WORD serviceId)
 {
-    switch (Service.ServiceID)
+    switch (serviceId)
     {
     case 1032:   // 関東広域: NHK-G
     case 2056:   // 近畿広域: NHKEテレ大阪
@@ -124,21 +124,21 @@ inline bool isNHKEService(const TVTest::ServiceInfo Service)
     }
 }
 
-inline std::string GetGRServiceLogoKey(const TVTest::ServiceInfo Service)
+inline std::string GetGRServiceLogoKey(const WORD serviceId)
 {
     // 全国: NHK総合
-    if (IsNHKGService(Service))
+    if (IsNHKGService(serviceId))
     {
         return LOGO_GR_NHKG;
     }
 
     // 全国: NHK教育
-    if (isNHKEService(Service))
+    if (isNHKEService(serviceId))
     {
         return LOGO_GR_NHKE;
     }
     
-    switch (Service.ServiceID)
+    switch (serviceId)
     {
     case 1040:   // 関東: 日テレ
         return "gr_1040";
@@ -168,9 +168,9 @@ inline std::string GetGRServiceLogoKey(const TVTest::ServiceInfo Service)
     }
 }
 
-inline std::string GetBSServiceLogoKey(const TVTest::ServiceInfo Service)
+inline std::string GetBSServiceLogoKey(const WORD serviceId)
 {
-    switch (Service.ServiceID)
+    switch (serviceId)
     {
     // NHK BS1
     case 101:
@@ -232,10 +232,24 @@ inline std::string GetBSServiceLogoKey(const TVTest::ServiceInfo Service)
 
 inline std::string GetServiceLogoKey(const TVTest::ServiceInfo Service)
 {
+    const auto serviceId = Service.ServiceID;
+
+    // BS
     if (Service.ServiceID < 1000)
     {
-        return GetBSServiceLogoKey(Service);
+        return GetBSServiceLogoKey(serviceId);
     }
 
-    return GetGRServiceLogoKey(Service);
+    // GR
+    // ServiceID, ServiceID - 1, ServiceID - 2 まで許容する
+    for (WORD i = 0; i < 3; i++)
+    {
+        auto logoKey = GetGRServiceLogoKey(serviceId - i);
+        if (logoKey != LOGO_DEFAULT)
+        {
+            return logoKey;
+        }
+    }
+
+    return LOGO_DEFAULT;
 }

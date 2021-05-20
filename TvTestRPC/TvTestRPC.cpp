@@ -227,19 +227,28 @@ void CMyPlugin::UpdatePresence()
         }
     }
 
-    if (m_pApp->GetServiceInfo(0, &Service))
+    // ServiceID + 2 まで許容する
+    auto foundService = false;
+    for (int i = 0; i < 3; i++)
     {
-        serviceName = WideToUTF8(Service.szServiceName, m_convertToHalfWidth);
-
-        if (m_showChannelLogo)
+        if (m_pApp->GetServiceInfo(i, &Service))
         {
-            auto logoKey = GetServiceLogoKey(Service);
-            presence.largeImageKey = logoKey.c_str();
-            presence.largeImageText = serviceName.c_str();
+            serviceName = WideToUTF8(Service.szServiceName, m_convertToHalfWidth);
+
+            if (m_showChannelLogo)
+            {
+                auto logoKey = GetServiceLogoKey(Service);
+                presence.largeImageKey = logoKey.c_str();
+                presence.largeImageText = serviceName.c_str();
+            }
+
+            foundService = true;
+            break;
         }
     }
-    else
+    if (!foundService)
     {
+        m_pApp->AddLog(L"Failed to get service info");
         return;
     }
     
