@@ -174,9 +174,6 @@ void CMyPlugin::UpdatePresence()
     DiscordRichPresence presence;
     memset(&presence, 0, sizeof presence);
 
-    // デフォルトロゴ
-    presence.largeImageKey = "logo";
-
     TVTest::ProgramInfo Program{};
     Program.Size = sizeof Program;
     wchar_t pszEventName[128];
@@ -196,6 +193,7 @@ void CMyPlugin::UpdatePresence()
     Service.Size = sizeof Service;
 
     std::string eventName;
+    std::string eventText;
     std::string serviceName;
 
     if (m_pApp->GetCurrentProgramInfo(&Program))
@@ -208,6 +206,7 @@ void CMyPlugin::UpdatePresence()
         m_eventId = Program.EventID;
 
         eventName = WideToUTF8(Program.pszEventName, m_convertToHalfWidth);
+        eventText = WideToUTF8(Program.pszEventText, m_convertToHalfWidth);
 
         auto start = SystemTime2Timet(Program.StartTime);
         auto end = start + Program.Duration;
@@ -236,6 +235,7 @@ void CMyPlugin::UpdatePresence()
         {
             auto logoKey = GetServiceLogoKey(Service);
             presence.largeImageKey = logoKey.c_str();
+            presence.largeImageText = serviceName.c_str();
         }
     }
     else
@@ -243,9 +243,8 @@ void CMyPlugin::UpdatePresence()
         return;
     }
     
-    presence.details = serviceName.c_str();
-    presence.state = eventName.c_str();
-    presence.largeImageText = serviceName.c_str();
+    presence.details = eventName.c_str();
+    presence.state = eventText.c_str();
 
     char tvtestVersion[128];
     auto version = m_pApp->GetVersion();
@@ -253,7 +252,7 @@ void CMyPlugin::UpdatePresence()
     auto minor = TVTest::GetMinorVersion(version);
     auto build = TVTest::GetBuildVersion(version);
     sprintf_s(tvtestVersion, "TVTest %lu.%lu.%lu", major, minor, build);
-    presence.smallImageKey = "logo";
+    presence.smallImageKey = LOGO_DEFAULT;
     presence.smallImageText = tvtestVersion;
     
     Discord_UpdatePresence(&presence);
