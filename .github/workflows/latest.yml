@@ -2,6 +2,9 @@ name: latest
 
 on:
   push:
+    paths:
+      - '*.sln'
+      - 'TvTestRPC/*'
 
   workflow_dispatch:
 
