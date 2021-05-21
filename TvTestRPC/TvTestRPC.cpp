@@ -1,15 +1,17 @@
 ﻿#include "stdafx.h"
 #include <ctime>
 #include <Shlwapi.h>
-#include <vector>
+#pragma comment(lib, "shlwapi.lib")
+#define TVTEST_PLUGIN_CLASS_IMPLEMENT // プラグインをクラスとして実装
+#include "TVTestPlugin.h"
+#include "discord_rpc.h"
+
 #include "Logo.h"
 #include "TvtPlay.h"
 #include "Utils.h"
 
-#pragma comment(lib, "shlwapi.lib")
-
-#define TvTestRPC_WINDOW_CLASS L"TvTestRPC Window"
-#define TvTestRPC_TIMER_ID 1
+constexpr auto TvTestRPCWindowClass = L"TvTestRPC Window";
+constexpr auto TvTestRPCTimerId = 1;
 
 class CMyPlugin final : public TVTest::CTVTestPlugin
 {
@@ -76,7 +78,7 @@ public:
         wc.hCursor = nullptr;
         wc.hbrBackground = nullptr;
         wc.lpszMenuName = nullptr;
-        wc.lpszClassName = TvTestRPC_WINDOW_CLASS;
+        wc.lpszClassName = TvTestRPCWindowClass;
         if (::RegisterClass(&wc) == 0)
         {
             return false;
@@ -84,7 +86,7 @@ public:
 
         // ウィンドウの作成
         m_hwnd = ::CreateWindowEx(
-            0, TvTestRPC_WINDOW_CLASS, nullptr, WS_POPUP,
+            0, TvTestRPCWindowClass, nullptr, WS_POPUP,
             0, 0, 0, 0, HWND_MESSAGE, nullptr, g_hinstDLL, this
         );
         if (m_hwnd == nullptr)
@@ -104,7 +106,7 @@ public:
         SaveConfig();
 
         // タイマー・ウィンドウの破棄
-        ::KillTimer(m_hwnd, TvTestRPC_TIMER_ID);
+        ::KillTimer(m_hwnd, TvTestRPCTimerId);
         ::DestroyWindow(m_hwnd);
 
         // Discord RPC クライアントの破棄
@@ -143,27 +145,29 @@ bool CMyPlugin::LoadConfig()
  */
 void CMyPlugin::SaveConfig() const
 {
-    if (m_isReady)
+    if (!m_isReady)
     {
-        struct IntString
-        {
-            wchar_t m_buffer[16];
-
-            explicit IntString(const int value)
-            {
-                ::wsprintf(m_buffer, L"%d", value);
-            }
-
-            operator LPCTSTR() const
-            {
-                return m_buffer;
-            }
-        };
-
-        ::WritePrivateProfileString(L"Settings", L"ShowEndTime", IntString(m_showEndTime), m_iniFileName);
-        ::WritePrivateProfileString(L"Settings", L"ShowChannelLogo", IntString(m_showChannelLogo), m_iniFileName);
-        ::WritePrivateProfileString(L"Settings", L"ConvertToHalfWidth", IntString(m_convertToHalfWidth), m_iniFileName);
+        return;
     }
+
+    struct IntString
+    {
+        wchar_t m_buffer[16];
+
+        explicit IntString(const int value)
+        {
+            ::wsprintf(m_buffer, L"%d", value);
+        }
+
+        operator LPCTSTR() const
+        {
+            return m_buffer;
+        }
+    };
+
+    ::WritePrivateProfileString(L"Settings", L"ShowEndTime", IntString(m_showEndTime), m_iniFileName);
+    ::WritePrivateProfileString(L"Settings", L"ShowChannelLogo", IntString(m_showChannelLogo), m_iniFileName);
+    ::WritePrivateProfileString(L"Settings", L"ConvertToHalfWidth", IntString(m_convertToHalfWidth), m_iniFileName);
 }
 
 /*
@@ -171,6 +175,11 @@ void CMyPlugin::SaveConfig() const
  */
 void CMyPlugin::UpdatePresence()
 {
+    if (!m_isReady)
+    {
+        return;
+    }
+
     DiscordRichPresence presence;
     memset(&presence, 0, sizeof presence);
 
@@ -234,7 +243,7 @@ void CMyPlugin::UpdatePresence()
 
             if (m_showChannelLogo)
             {
-                auto logoKey = GetServiceLogoKey(Service);
+                auto logoKey = GetServiceLogoKey(Service.ServiceID);
                 presence.largeImageKey = logoKey.c_str();
                 presence.largeImageText = eventText.c_str();
             }
@@ -311,13 +320,13 @@ LRESULT CALLBACK CMyPlugin::WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM 
             auto* pThis = static_cast<CMyPlugin*>(pcs->lpCreateParams);
 
             ::SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(pThis));
-            ::SetTimer(hwnd, TvTestRPC_TIMER_ID, 3000, nullptr);
+            ::SetTimer(hwnd, TvTestRPCTimerId, 3000, nullptr);
         }
 
         return true;
 
     case WM_TIMER:
-        if (wParam == TvTestRPC_TIMER_ID)
+        if (wParam == TvTestRPCTimerId)
         {
             auto* pThis = GetThis(hwnd);
             pThis->UpdatePresence();

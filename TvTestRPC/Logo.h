@@ -278,10 +278,8 @@ inline std::string GetBSServiceLogoKey(const WORD serviceId)
     }
 }
 
-inline std::string GetServiceLogoKey(const TVTest::ServiceInfo Service)
+inline std::string GetServiceLogoKey(const WORD serviceId)
 {
-    const auto serviceId = Service.ServiceID;
-
     // BS
     if (serviceId < 1000)
     {

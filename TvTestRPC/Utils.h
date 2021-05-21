@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "stdafx.h"
+#include "strconv.h"
 
 /*
  * SYSTEMTIME 構造体を time_t に変換する
