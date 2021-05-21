@@ -155,9 +155,8 @@ inline std::string GetGRServiceLogoKey(const WORD serviceId)
     case 23608:  // 東京: TOKYO MX
         return "gr_23608";
     case 24680:  // 東京: イッツコムch10 (CATV)
-        return "gr_24680";
     case 24696:  // 東京: イッツコムch11 (CATV)
-        return "gr_24696";
+        return "gr_24680";
 
     case 17440:  // 宮城: ミヤギテレビ
         return "gr_17440";
