@@ -18,7 +18,7 @@ inline time_t SystemTime2Timet(const SYSTEMTIME& st)
  * 全角 → 半角に変換する
  * http://yamatyuu.net/computer/program/zen2han/index.html
  */
-inline TCHAR* Full2Half(TCHAR* source)
+inline wchar_t* Full2Half(wchar_t* source)
 {
     for (auto* p = source; *p; p++)
     {
@@ -39,7 +39,7 @@ inline TCHAR* Full2Half(TCHAR* source)
 /*
  * WCHAR を std::string に変換する
  */
-inline std::string WideToUTF8(TCHAR* source, const bool asHalfWidth)
+inline std::string WideToUTF8(wchar_t* source, const bool asHalfWidth)
 {
     if (asHalfWidth)
     {

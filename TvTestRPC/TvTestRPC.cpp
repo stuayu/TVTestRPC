@@ -2,13 +2,8 @@
 #include <ctime>
 #include <Shlwapi.h>
 #pragma comment(lib, "shlwapi.lib")
-#define TVTEST_PLUGIN_CLASS_IMPLEMENT // プラグインをクラスとして実装
-#include "TVTestPlugin.h"
-#include "discord_rpc.h"
 
-#include "Logo.h"
-#include "TvtPlay.h"
-#include "Utils.h"
+#include "Presence.h"
 
 constexpr auto TvTestRPCWindowClass = L"TvTestRPC Window";
 constexpr auto TvTestRPCTimerId = 1;
@@ -32,7 +27,6 @@ class CMyPlugin final : public TVTest::CTVTestPlugin
 
     static LRESULT CALLBACK EventCallback(UINT Event, LPARAM lParam1, LPARAM lParam2, void* pClientData);
     static LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-    static CMyPlugin* GetThis(HWND hwnd);
 
 public:
     /*
@@ -180,11 +174,26 @@ void CMyPlugin::UpdatePresence()
         return;
     }
 
-    DiscordRichPresence presence;
-    memset(&presence, 0, sizeof presence);
+    // Service: サブチャンネルを許容して取得する
+    std::optional<TVTest::ServiceInfo> service = std::nullopt;
+    for (int i = 0; i < SUB_SERVICE_ID_ALLOWANCE; i++)
+    {
+        TVTest::ServiceInfo Service{};
 
+        if (m_pApp->GetServiceInfo(i, &Service) && wcslen(Service.szServiceName) > 0)
+        {
+            service = std::optional(Service);
+            break;
+        }
+    }
+
+    if (!service.has_value())
+    {
+        return;
+    }
+
+    // Program
     TVTest::ProgramInfo Program{};
-    Program.Size = sizeof Program;
     wchar_t pszEventName[128];
     Program.pszEventName = pszEventName;
     Program.MaxEventName = _countof(pszEventName);
@@ -194,82 +203,26 @@ void CMyPlugin::UpdatePresence()
     wchar_t pszEventExtText[128];
     Program.pszEventExtText = pszEventExtText;
     Program.MaxEventExtText = _countof(pszEventExtText);
+    auto program = m_pApp->GetCurrentProgramInfo(&Program) ? std::optional(Program) : std::nullopt;
 
-    TVTest::ServiceInfo Service{};
-    Service.Size = sizeof Service;
-
-    std::string eventName;
-    std::string eventText;
-    std::string serviceName;
-
-    if (m_pApp->GetCurrentProgramInfo(&Program))
-    {
-        // 前回と同じ Event ID であれば更新する必要はない
-        if (m_eventId == Program.EventID)
-        {
-            return;
-        }
-        m_eventId = Program.EventID;
-
-        eventName = WideToUTF8(Program.pszEventName, m_convertToHalfWidth);
-        eventText = WideToUTF8(Program.pszEventText, m_convertToHalfWidth);
-
-        auto start = SystemTime2Timet(Program.StartTime);
-        auto end = start + Program.Duration;
-        
-        // TvtPlay が有効なときは現在時刻を基準にする
-        auto tvtPlayHwnd = FindTvtPlayFrame();
-        if (tvtPlayHwnd)
-        {
-            auto pos = GetTvtPlayPositionSec(tvtPlayHwnd);
-        	auto now = time(nullptr);
-        	start = now + pos;
-        	end = now + Program.Duration;
-        }
-
-    	presence.startTimestamp = start;
-        if (m_showEndTime) {
-            presence.endTimestamp = end;
-        }
-    }
-
-    // サブチャンネルを許容する
-    auto foundService = false;
-    for (int i = 0; i < SUB_SERVICE_ID_ALLOWANCE; i++)
-    {
-        if (m_pApp->GetServiceInfo(i, &Service))
-        {
-            serviceName = WideToUTF8(Service.szServiceName, m_convertToHalfWidth);
-
-            if (m_showChannelLogo)
-            {
-                auto logoKey = GetServiceLogoKey(Service.ServiceID);
-                presence.largeImageKey = logoKey.c_str();
-                presence.largeImageText = eventText.c_str();
-            }
-
-            foundService = true;
-            break;
-        }
-    }
-    if (!foundService)
+    // 前回と同じ Event ID であれば更新する必要はない
+    if (program.has_value() && m_eventId == program.value().EventID)
     {
         return;
     }
-    
-    presence.details = serviceName.c_str();
-    presence.state = eventName.c_str();
 
-    char tvtestVersion[128];
+    // Version
     auto version = m_pApp->GetVersion();
-    auto major = TVTest::GetMajorVersion(version);
-    auto minor = TVTest::GetMinorVersion(version);
-    auto build = TVTest::GetBuildVersion(version);
-    sprintf_s(tvtestVersion, "TVTest %lu.%lu.%lu", major, minor, build);
-    presence.smallImageKey = LOGO_DEFAULT;
-    presence.smallImageText = tvtestVersion;
-    
-    Discord_UpdatePresence(&presence);
+
+    if (auto presence = CreatePresence(service.value(), program, version, m_showEndTime, m_showChannelLogo, m_convertToHalfWidth); presence.has_value()) {
+        Discord_UpdatePresence(&presence.value());
+
+        // Event ID を更新
+        if (program.has_value())
+        {
+            m_eventId = program.value().EventID;
+        }
+    }
 }
 
 /*
@@ -294,8 +247,8 @@ LRESULT CALLBACK CMyPlugin::EventCallback(const UINT Event, const LPARAM lParam1
 
         return true;
 
-    case TVTest::EVENT_SERVICECHANGE:
     case TVTest::EVENT_CHANNELCHANGE:
+    case TVTest::EVENT_SERVICECHANGE:
     case TVTest::EVENT_SERVICEUPDATE:
         pThis->UpdatePresence();
 
@@ -310,7 +263,7 @@ LRESULT CALLBACK CMyPlugin::EventCallback(const UINT Event, const LPARAM lParam1
  * ウィンドウプロシージャ
  * タイマー処理を行う
  */
-LRESULT CALLBACK CMyPlugin::WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK CMyPlugin::WndProc(const HWND hwnd, const UINT uMsg, const WPARAM wParam, const LPARAM lParam)
 {
     switch (uMsg)
     {
@@ -328,7 +281,8 @@ LRESULT CALLBACK CMyPlugin::WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM 
     case WM_TIMER:
         if (wParam == TvTestRPCTimerId)
         {
-            auto* pThis = GetThis(hwnd);
+            auto* pThis = reinterpret_cast<CMyPlugin*>(::GetWindowLongPtr(hwnd, GWLP_USERDATA));
+
             pThis->UpdatePresence();
         }
 
@@ -337,12 +291,4 @@ LRESULT CALLBACK CMyPlugin::WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM 
     default:
         return ::DefWindowProc(hwnd, uMsg, wParam, lParam);
     }
-}
-
-/*
- * ウィンドウハンドルから this を取得する
- */
-CMyPlugin* CMyPlugin::GetThis(const HWND hwnd)
-{
-    return reinterpret_cast<CMyPlugin*>(::GetWindowLongPtr(hwnd, GWLP_USERDATA));
 }
