@@ -5,6 +5,7 @@
 #define LOGO_GR_NHKG "gr_nhkg"
 #define LOGO_GR_NHKE "gr_nhke"
 #define LOGO_DEFAULT "logo"
+#define SUB_SERVICE_ID_ALLOWANCE 3
 
 /*
  * 対象のサービスが NHK総合 であるかどうか判定する
@@ -153,6 +154,10 @@ inline std::string GetGRServiceLogoKey(const WORD serviceId)
 
     case 23608:  // 東京: TOKYO MX
         return "gr_23608";
+    case 24680:  // 東京: イッツコムch10 (CATV)
+        return "gr_24680";
+    case 24696:  // 東京: イッツコムch11 (CATV)
+        return "gr_24696";
 
     case 17440:  // 宮城: ミヤギテレビ
         return "gr_17440";
@@ -165,16 +170,19 @@ inline std::string GetGRServiceLogoKey(const WORD serviceId)
 
     case 37904:  // 富山: KNB
         return "gr_37904";
-    case 34840:  // 石川: HAB
-        return "gr_34840";
     case 37920:  // 富山: チューリップテレビ
         return "gr_37920";
     case 37912:  // 富山: 富山テレビ放送
         return "gr_37912";
+    case 38008:  // 富山: コミュチャン091
+        return "gr_38008";
+
+    case 34840:  // 石川: HAB
+        return "gr_34840";
 
     case 24632:  // 神奈川: tvk
         return "gr_24632";
-
+    
     default:
         return LOGO_DEFAULT;
     }
@@ -275,14 +283,14 @@ inline std::string GetServiceLogoKey(const TVTest::ServiceInfo Service)
     const auto serviceId = Service.ServiceID;
 
     // BS
-    if (Service.ServiceID < 1000)
+    if (serviceId < 1000)
     {
         return GetBSServiceLogoKey(serviceId);
     }
 
     // GR
-    // ServiceID, ServiceID - 1, ServiceID - 2 まで許容する
-    for (WORD i = 0; i < 3; i++)
+    // サブチャンネルを許容する
+    for (WORD i = 0; i < SUB_SERVICE_ID_ALLOWANCE; i++)
     {
         auto logoKey = GetGRServiceLogoKey(serviceId - i);
         if (logoKey != LOGO_DEFAULT)

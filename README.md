@@ -17,7 +17,8 @@ TVTest で Discord Rich Presence を使えるようにするプラグインで�
 - TvtPlay プラグインと連携し, ファイル再生時にも経過時間を表示
 
 - 東京近辺の地上波だけでなく, NHK や BS, 一部の地域の地上波のロゴ表示にも対応  
-対応している局は NHK (総合, 教育), 東京・宮城・富山・神奈川の地上波, BS の無料放送, BS の一部の有料放送です。[assets](https://github.com/SlashNephy/TvTestRPC/tree/dev/assets) 以下にロゴ一覧があります。
+対応している局は NHK (総合, 教育), 東京・宮城・富山・神奈川の地上波, BS です。[assets](https://github.com/SlashNephy/TvTestRPC/tree/dev/assets) 以下にロゴ一覧があります。  
+ロゴ追加のリクエストは Issue からお願いします。「チャンネル名」, 「サービス ID」, 「svg 画像 (推奨) または高画質な png」 をご用意ください。
 
 - 視聴中の番組が終了したときに Rich Presence が更新されないバグを修正  
 タイマー処理を回し, EventID が異なっていれば更新するようにしています。

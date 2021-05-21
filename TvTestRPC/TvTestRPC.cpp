@@ -224,9 +224,9 @@ void CMyPlugin::UpdatePresence()
         }
     }
 
-    // ServiceID + 2 まで許容する
+    // サブチャンネルを許容する
     auto foundService = false;
-    for (int i = 0; i < 3; i++)
+    for (int i = 0; i < SUB_SERVICE_ID_ALLOWANCE; i++)
     {
         if (m_pApp->GetServiceInfo(i, &Service))
         {
