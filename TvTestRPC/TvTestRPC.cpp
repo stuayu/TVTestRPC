@@ -214,14 +214,13 @@ void CMyPlugin::UpdatePresence()
     // Version
     auto version = m_pApp->GetVersion();
 
-    if (auto presence = CreatePresence(service.value(), program, version, m_showEndTime, m_showChannelLogo, m_convertToHalfWidth); presence.has_value()) {
-        Discord_UpdatePresence(&presence.value());
+    auto presence = CreatePresence(service.value(), program, version, m_showEndTime, m_showChannelLogo, m_convertToHalfWidth);
+    Discord_UpdatePresence(&presence);
 
-        // Event ID を更新
-        if (program.has_value())
-        {
-            m_eventId = program.value().EventID;
-        }
+    // Event ID を更新
+    if (program.has_value())
+    {
+        m_eventId = program.value().EventID;
     }
 }
 
