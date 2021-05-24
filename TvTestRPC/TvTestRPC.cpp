@@ -7,20 +7,22 @@
 
 constexpr auto TvTestRPCWindowClass = L"TvTestRPC Window";
 constexpr auto TvTestRPCTimerId = 1;
+constexpr auto DefaultEventId = 0;
 
 class CMyPlugin final : public TVTest::CTVTestPlugin
 {
     DiscordEventHandlers m_handlers{};
-    TCHAR m_iniFileName[MAX_PATH]{};
+    wchar_t m_iniFileName[MAX_PATH]{};
     HWND m_hwnd{};
-    WORD m_eventId{};
+    WORD m_eventId = DefaultEventId;
 
     bool m_showEndTime = false;
     bool m_showChannelLogo = false;
     bool m_convertToHalfWidth = false;
     bool m_isReady = false;
 
-    bool LoadConfig();
+    void LoadConfig();
+    void StartDiscordRPC();
     void UpdatePresence();
 
     static LRESULT CALLBACK EventCallback(UINT Event, LPARAM lParam1, LPARAM lParam2, void* pClientData);
@@ -53,9 +55,6 @@ public:
      */
     bool Initialize() override
     {
-        // Discord RPC クライアントの初期化
-        Discord_Initialize("844540020286685184", &m_handlers, 1, nullptr);
-
         // TVTest イベントコールバックの設定
         m_pApp->SetEventCallback(EventCallback, this);
 
@@ -98,9 +97,6 @@ public:
         ::KillTimer(m_hwnd, TvTestRPCTimerId);
         ::DestroyWindow(m_hwnd);
 
-        // Discord RPC クライアントの破棄
-        Discord_Shutdown();
-
         return true;
     }
 };
@@ -116,7 +112,7 @@ TVTest::CTVTestPlugin* CreatePluginClass()
 /*
  * 設定を読み込む
  */
-bool CMyPlugin::LoadConfig()
+void CMyPlugin::LoadConfig()
 {
     ::GetModuleFileName(g_hinstDLL, m_iniFileName, MAX_PATH);
     ::PathRenameExtension(m_iniFileName, L".ini");
@@ -124,9 +120,14 @@ bool CMyPlugin::LoadConfig()
     m_showEndTime = ::GetPrivateProfileInt(L"Settings", L"ShowEndTime", m_showEndTime, m_iniFileName) > 0;
     m_showChannelLogo = ::GetPrivateProfileInt(L"Settings", L"ShowChannelLogo", m_showChannelLogo, m_iniFileName) > 0;
     m_convertToHalfWidth = ::GetPrivateProfileInt(L"Settings", L"ConvertToHalfWidth", m_convertToHalfWidth, m_iniFileName) > 0;
-    m_isReady = true;
+}
 
-    return true;
+/*
+ * Discord RPC クライアントを初期化する
+ */
+void CMyPlugin::StartDiscordRPC()
+{
+    Discord_Initialize("844540020286685184", &m_handlers, 1, nullptr);
 }
 
 /*
@@ -199,14 +200,23 @@ LRESULT CALLBACK CMyPlugin::EventCallback(const UINT Event, const LPARAM lParam1
     switch (Event)
     {
     case TVTest::EVENT_PLUGINENABLE:
-        if (lParam1 != 0)
+        if (lParam1 == 1)
         {
             pThis->LoadConfig();
+
+            pThis->StartDiscordRPC();
+            pThis->m_isReady = true;
+
             pThis->UpdatePresence();
         }
         else
         {
+            pThis->m_eventId = DefaultEventId;
+            pThis->m_isReady = false;
+
             Discord_ClearPresence();
+            // Discord RPC クライアントの破棄
+            Discord_Shutdown();
         }
 
         return true;
