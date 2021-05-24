@@ -21,8 +21,6 @@ class CMyPlugin final : public TVTest::CTVTestPlugin
     bool m_isReady = false;
 
     bool LoadConfig();
-    void SaveConfig() const;
-
     void UpdatePresence();
 
     static LRESULT CALLBACK EventCallback(UINT Event, LPARAM lParam1, LPARAM lParam2, void* pClientData);
@@ -96,9 +94,6 @@ public:
      */
     bool Finalize() override
     {
-        // 設定を保存
-        SaveConfig();
-
         // タイマー・ウィンドウの破棄
         ::KillTimer(m_hwnd, TvTestRPCTimerId);
         ::DestroyWindow(m_hwnd);
@@ -126,42 +121,12 @@ bool CMyPlugin::LoadConfig()
     ::GetModuleFileName(g_hinstDLL, m_iniFileName, MAX_PATH);
     ::PathRenameExtension(m_iniFileName, L".ini");
 
-    m_showEndTime = ::GetPrivateProfileInt(L"Settings", L"ShowEndTime", m_showEndTime, m_iniFileName) != 0;
-    m_showChannelLogo = ::GetPrivateProfileInt(L"Settings", L"ShowChannelLogo", m_showChannelLogo, m_iniFileName) != 0;
-    m_convertToHalfWidth = ::GetPrivateProfileInt(L"Settings", L"ConvertToHalfWidth", m_convertToHalfWidth, m_iniFileName) != 0;
+    m_showEndTime = ::GetPrivateProfileInt(L"Settings", L"ShowEndTime", m_showEndTime, m_iniFileName) > 0;
+    m_showChannelLogo = ::GetPrivateProfileInt(L"Settings", L"ShowChannelLogo", m_showChannelLogo, m_iniFileName) > 0;
+    m_convertToHalfWidth = ::GetPrivateProfileInt(L"Settings", L"ConvertToHalfWidth", m_convertToHalfWidth, m_iniFileName) > 0;
     m_isReady = true;
 
     return true;
-}
-
-/*
- * 設定を保存する
- */
-void CMyPlugin::SaveConfig() const
-{
-    if (!m_isReady)
-    {
-        return;
-    }
-
-    struct IntString
-    {
-        wchar_t m_buffer[16];
-
-        explicit IntString(const int value)
-        {
-            ::wsprintf(m_buffer, L"%d", value);
-        }
-
-        operator LPCTSTR() const
-        {
-            return m_buffer;
-        }
-    };
-
-    ::WritePrivateProfileString(L"Settings", L"ShowEndTime", IntString(m_showEndTime), m_iniFileName);
-    ::WritePrivateProfileString(L"Settings", L"ShowChannelLogo", IntString(m_showChannelLogo), m_iniFileName);
-    ::WritePrivateProfileString(L"Settings", L"ConvertToHalfWidth", IntString(m_convertToHalfWidth), m_iniFileName);
 }
 
 /*
