@@ -5,14 +5,13 @@
 constexpr auto TvTestRPCWindowClass = L"TvTestRPC Window";
 constexpr auto TvTestRPCTimerId = 1;
 constexpr auto TvTestRPCTimerIntervalMs = 3000;
-constexpr auto DefaultEventId = 0;
 
 class CMyPlugin final : public TVTest::CTVTestPlugin
 {
     DiscordEventHandlers m_handlers{};
+    DiscordRichPresence m_lastPresence{};
     wchar_t m_iniFileName[MAX_PATH]{};
     HWND m_hwnd{};
-    WORD m_eventId = DefaultEventId;
 
     bool m_showEndTime = false;
     bool m_showChannelLogo = false;
@@ -195,23 +194,21 @@ void CMyPlugin::UpdatePresence()
     Program.MaxEventExtText = _countof(pszEventExtText);
     auto program = m_pApp->GetCurrentProgramInfo(&Program) ? std::optional(Program) : std::nullopt;
 
-    // 前回と同じ Event ID であれば更新する必要はない
-    if (service.has_value() && program.has_value() && m_eventId == program.value().EventID)
-    {
-        return;
-    }
-
     // Version
     auto version = m_pApp->GetVersion();
 
     auto presence = CreatePresence(service, program, version, m_showEndTime, m_showChannelLogo, m_convertToHalfWidth);
-    Discord_UpdatePresence(&presence);
 
-    // Event ID を更新
-    if (program.has_value())
+    // 同じ Presence であれば無視
+    if (CheckEquality(presence, m_lastPresence))
     {
-        m_eventId = program.value().EventID;
+        return;
     }
+
+    Discord_UpdatePresence(&presence);
+    m_lastPresence = presence;
+
+    m_pApp->AddLog(L"Presence を更新しました。");
 }
 
 /*
@@ -235,8 +232,8 @@ LRESULT CALLBACK CMyPlugin::EventCallback(const UINT Event, const LPARAM lParam1
         }
         else
         {
-            pThis->m_eventId = DefaultEventId;
             pThis->m_isReady = false;
+            pThis->m_lastPresence = {};
 
             Discord_ClearPresence();
             // Discord RPC クライアントの破棄

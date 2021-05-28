@@ -6,6 +6,7 @@
 #include "TvtPlay.h"
 #include "Utils.h"
 
+constexpr auto MaxDetailsLength = 128;
 constexpr auto MaxEventNameLength = 128;
 constexpr auto MaxEventTextLength = 128;
 constexpr auto MaxImageTextLength = 128;
@@ -56,8 +57,9 @@ inline DiscordRichPresence CreatePresence(
         wchar_t rawServiceName[32];
         wcscpy_s(rawServiceName, Service.value().szServiceName);
         const auto serviceName = WideToUTF8(rawServiceName, ConvertToHalfWidth);
+        std::string details(serviceName.c_str(), MaxDetailsLength);
 
-        Presence.details = serviceName.c_str();
+        Presence.details = details.c_str();
     }
 
     // 番組データがあるなら番組名を付与する
@@ -69,13 +71,19 @@ inline DiscordRichPresence CreatePresence(
         Presence.state = eventName.c_str();
     }
 
-    // サービスデータがあるならチャンネルロゴを付与する
-    if (ShowChannelLogo && Service.has_value())
+    // チャンネルロゴを付与する
+    if (ShowChannelLogo)
     {
-        const auto serviceId = Service.value().ServiceID;
-        const auto logoKey = GetServiceLogoKey(serviceId);
+        if (Service.has_value()) {
+            const auto serviceId = Service.value().ServiceID;
+            const auto logoKey = GetServiceLogoKey(serviceId);
 
-        Presence.largeImageKey = logoKey.c_str();
+            Presence.largeImageKey = logoKey.c_str();
+        }
+        else
+        {
+            Presence.largeImageKey = LOGO_DEFAULT;
+        }
 
         // 番組データがあるときは番組説明を付与する
         if (Program.has_value())
@@ -98,4 +106,33 @@ inline DiscordRichPresence CreatePresence(
     Presence.smallImageText = version.c_str();
 
     return Presence;
+}
+
+inline bool CheckEquality(const DiscordRichPresence one, const DiscordRichPresence other)
+{
+    // 番組の開始時刻が違う
+    if (one.startTimestamp != other.startTimestamp)
+    {
+        return false;
+    }
+
+    // サービス名が違う
+    if (one.details != other.details)
+    {
+        return false;
+    }
+
+    // 番組名が違う
+    if (one.state != other.state)
+    {
+        return false;
+    }
+
+    // ロゴが違う
+    if (one.largeImageKey != other.largeImageKey)
+    {
+        return false;
+    }
+
+    return true;
 }
