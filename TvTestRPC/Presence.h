@@ -6,72 +6,94 @@
 #include "TvtPlay.h"
 #include "Utils.h"
 
+constexpr auto MaxEventNameLength = 128;
+constexpr auto MaxEventTextLength = 128;
+constexpr auto MaxImageTextLength = 128;
+
 inline DiscordRichPresence CreatePresence(
-    TVTest::ServiceInfo Service,
+    const std::optional<TVTest::ServiceInfo> Service,
     const std::optional<TVTest::ProgramInfo> Program,
     const DWORD Version,
     const bool ShowEndTime,
     const bool ShowChannelLogo,
     const bool ConvertToHalfWidth
-) {
+)
+{
     DiscordRichPresence Presence;
     memset(&Presence, 0, sizeof Presence);
 
     // 番組データがあるなら時間情報を付与する
     if (Program.has_value())
     {
+        int64_t start, end;
+        const auto duration = Program.value().Duration;
+
         // TvtPlay が有効なら再生位置を加味する
         if (const auto tvtPlayHwnd = FindTvtPlayFrame(); tvtPlayHwnd)
         {
             const auto now = time(nullptr);
             const auto pos = GetTvtPlayPositionSec(tvtPlayHwnd);
 
-            Presence.startTimestamp = now + pos;
-            if (ShowEndTime) {
-                Presence.endTimestamp = now + Program.value().Duration;
-            }
+            start = now + pos;
+            end = now + duration;
         }
         else
         {
-            Presence.startTimestamp = SystemTime2Timet(Program.value().StartTime);
-            if (ShowEndTime) {
-                Presence.endTimestamp = Presence.startTimestamp + Program.value().Duration;
-            }
+            const auto startTime = Program.value().StartTime;
+
+            start = SystemTime2Timet(startTime);
+            end = start + duration;
+        }
+
+        Presence.startTimestamp = start;
+        if (ShowEndTime) {
+            Presence.endTimestamp = end;
         }
     }
 
-    // サービス名を付与する
-    const auto serviceName = WideToUTF8(Service.szServiceName, ConvertToHalfWidth);
-    Presence.details = serviceName.c_str();
+    // サービスデータがあるならサービス名を付与する
+    if (Service.has_value()) {
+        wchar_t rawServiceName[32];
+        wcscpy_s(rawServiceName, Service.value().szServiceName);
+        const auto serviceName = WideToUTF8(rawServiceName, ConvertToHalfWidth);
 
-    // 番組データがあるときは番組名を付与する
+        Presence.details = serviceName.c_str();
+    }
+
+    // 番組データがあるなら番組名を付与する
     if (Program.has_value())
     {
-        const auto eventName = WideToUTF8(Program.value().pszEventName, ConvertToHalfWidth);
+        const auto rawEventName = Program.value().pszEventName;
+        const auto eventName = WideToUTF8(rawEventName, ConvertToHalfWidth);
+
         Presence.state = eventName.c_str();
     }
 
-    // チャンネルロゴを付与する
-    if (ShowChannelLogo)
+    // サービスデータがあるならチャンネルロゴを付与する
+    if (ShowChannelLogo && Service.has_value())
     {
-        const auto logoKey = GetServiceLogoKey(Service.ServiceID);
+        const auto serviceId = Service.value().ServiceID;
+        const auto logoKey = GetServiceLogoKey(serviceId);
+
         Presence.largeImageKey = logoKey.c_str();
 
         // 番組データがあるときは番組説明を付与する
         if (Program.has_value())
         {
-            const auto eventText = WideToUTF8(Program.value().pszEventText, ConvertToHalfWidth);
+            const auto rawEventText = Program.value().pszEventText;
+            const auto eventText = WideToUTF8(rawEventText, ConvertToHalfWidth);
+
             Presence.largeImageText = eventText.c_str();
         }
     }
 
     // バージョン情報を付与する
-    char tvtestVersion[128];
+    char tvtestVersion[MaxImageTextLength];
     const auto major = TVTest::GetMajorVersion(Version);
     const auto minor = TVTest::GetMinorVersion(Version);
     const auto build = TVTest::GetBuildVersion(Version);
     sprintf_s(tvtestVersion, "TVTest %lu.%lu.%lu", major, minor, build);
-    std::string version(tvtestVersion, 128);
+    std::string version(tvtestVersion, MaxImageTextLength);
     Presence.smallImageKey = LOGO_DEFAULT;
     Presence.smallImageText = version.c_str();
 

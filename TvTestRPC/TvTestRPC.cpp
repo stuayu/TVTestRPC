@@ -1,12 +1,10 @@
 ﻿#include "stdafx.h"
-#include <ctime>
-#include <Shlwapi.h>
-#pragma comment(lib, "shlwapi.lib")
 
 #include "Presence.h"
 
 constexpr auto TvTestRPCWindowClass = L"TvTestRPC Window";
 constexpr auto TvTestRPCTimerId = 1;
+constexpr auto TvTestRPCTimerIntervalMs = 3000;
 constexpr auto DefaultEventId = 0;
 
 class CMyPlugin final : public TVTest::CTVTestPlugin
@@ -184,26 +182,21 @@ void CMyPlugin::UpdatePresence()
         }
     }
 
-    if (!service.has_value())
-    {
-        return;
-    }
-
     // Program
     TVTest::ProgramInfo Program{};
-    wchar_t pszEventName[128];
+    wchar_t pszEventName[MaxEventNameLength];
     Program.pszEventName = pszEventName;
     Program.MaxEventName = _countof(pszEventName);
-    wchar_t pszEventText[128];
+    wchar_t pszEventText[MaxEventTextLength];
     Program.pszEventText = pszEventText;
     Program.MaxEventText = _countof(pszEventText);
-    wchar_t pszEventExtText[128];
+    wchar_t pszEventExtText[MaxEventTextLength];
     Program.pszEventExtText = pszEventExtText;
     Program.MaxEventExtText = _countof(pszEventExtText);
     auto program = m_pApp->GetCurrentProgramInfo(&Program) ? std::optional(Program) : std::nullopt;
 
     // 前回と同じ Event ID であれば更新する必要はない
-    if (program.has_value() && m_eventId == program.value().EventID)
+    if (service.has_value() && program.has_value() && m_eventId == program.value().EventID)
     {
         return;
     }
@@ -211,7 +204,7 @@ void CMyPlugin::UpdatePresence()
     // Version
     auto version = m_pApp->GetVersion();
 
-    auto presence = CreatePresence(service.value(), program, version, m_showEndTime, m_showChannelLogo, m_convertToHalfWidth);
+    auto presence = CreatePresence(service, program, version, m_showEndTime, m_showChannelLogo, m_convertToHalfWidth);
     Discord_UpdatePresence(&presence);
 
     // Event ID を更新
@@ -278,7 +271,7 @@ LRESULT CALLBACK CMyPlugin::WndProc(const HWND hwnd, const UINT uMsg, const WPAR
             auto* pThis = static_cast<CMyPlugin*>(pcs->lpCreateParams);
 
             ::SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(pThis));
-            ::SetTimer(hwnd, TvTestRPCTimerId, 3000, nullptr);
+            ::SetTimer(hwnd, TvTestRPCTimerId, TvTestRPCTimerIntervalMs, nullptr);
         }
 
         return true;

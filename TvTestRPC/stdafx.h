@@ -6,10 +6,14 @@
 
 #include <cstdlib>
 #include <cstdint>
+#include <ctime>
 #include <combaseapi.h>
 #include <tchar.h>
 #include <string>
 #include <optional>
+
+#include <Shlwapi.h>
+#pragma comment(lib, "shlwapi.lib")
 
 // プラグインをクラスとして実装
 #define TVTEST_PLUGIN_CLASS_IMPLEMENT
