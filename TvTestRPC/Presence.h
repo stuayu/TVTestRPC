@@ -36,7 +36,7 @@ inline DiscordRichPresence CreatePresence(
             const auto pos = GetTvtPlayPositionSec(tvtPlayHwnd);
 
             start = now + pos;
-            end = now + duration;
+            end = now + (static_cast<long long>(duration) - pos);
         }
         else
         {
@@ -54,12 +54,12 @@ inline DiscordRichPresence CreatePresence(
 
     // サービスデータがあるならサービス名を付与する
     if (Service.has_value()) {
-        wchar_t rawServiceName[32];
-        wcscpy_s(rawServiceName, Service.value().szServiceName);
+        auto rawServiceName = const_cast<LPWSTR>(Service.value().szServiceName);
         const auto serviceName = WideToUTF8(rawServiceName, ConvertToHalfWidth);
-        std::string details(serviceName.c_str(), MaxDetailsLength);
 
-        Presence.details = details.c_str();
+        char details[MaxDetailsLength];
+        strcpy_s(details, serviceName.c_str());
+        Presence.details = details;
     }
 
     // 番組データがあるなら番組名を付与する
@@ -88,10 +88,18 @@ inline DiscordRichPresence CreatePresence(
         // 番組データがあるときは番組説明を付与する
         if (Program.has_value())
         {
-            const auto rawEventText = Program.value().pszEventText;
-            const auto eventText = WideToUTF8(rawEventText, ConvertToHalfWidth);
+            if (const auto rawEventText = Program.value().pszEventText; wcslen(rawEventText) > 0)
+            {
+                const auto eventText = WideToUTF8(rawEventText, ConvertToHalfWidth);
 
-            Presence.largeImageText = eventText.c_str();
+                Presence.largeImageText = eventText.c_str();
+            }
+            else if (const auto rawEventExtText = Program.value().pszEventExtText; wcslen(rawEventExtText) > 0)
+            {
+                const auto eventExtText = WideToUTF8(rawEventExtText, ConvertToHalfWidth);
+
+                Presence.largeImageText = eventExtText.c_str();
+            }
         }
     }
 

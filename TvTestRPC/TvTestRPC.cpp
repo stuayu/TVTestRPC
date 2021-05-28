@@ -207,8 +207,6 @@ void CMyPlugin::UpdatePresence()
 
     Discord_UpdatePresence(&presence);
     m_lastPresence = presence;
-
-    m_pApp->AddLog(L"Presence を更新しました。");
 }
 
 /*
