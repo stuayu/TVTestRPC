@@ -66,6 +66,11 @@ jobs:
     #- run: |
     #   make bootstrap
     #   make release
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v1
+
+    - name: MSBuild
+      run: msbuild TvTestRPC.sln -property:Configuration="Release" -property:Platform="x64" -m
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v1
