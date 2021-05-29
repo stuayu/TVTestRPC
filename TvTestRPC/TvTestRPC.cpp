@@ -12,6 +12,7 @@ class CTvTestRPCPlugin final : public TVTest::CTVTestPlugin
     DiscordRichPresence m_lastPresence{};
     wchar_t m_iniFileName[MAX_PATH]{};
     HWND m_hwnd{};
+    std::mutex m_mutex;
 
     bool m_showEndTime = false;
     bool m_showChannelLogo = false;
@@ -170,54 +171,59 @@ void CTvTestRPCPlugin::UpdatePresence()
         return;
     }
 
-    // Service: サブチャンネルを許容して取得する
-    std::optional<TVTest::ServiceInfo> service = std::nullopt;
-    for (auto i = 0; i < SUB_SERVICE_ID_ALLOWANCE; i++)
+    // ロック
     {
-        TVTest::ServiceInfo Service{};
+        std::lock_guard lock(m_mutex);
 
-        if (m_pApp->GetServiceInfo(i, &Service))
+        // Service: サブチャンネルを許容して取得する
+        std::optional<TVTest::ServiceInfo> service = std::nullopt;
+        for (auto i = 0; i < SUB_SERVICE_ID_ALLOWANCE; i++)
         {
-            service = std::optional(Service);
-            break;
+            TVTest::ServiceInfo Service{};
+
+            if (m_pApp->GetServiceInfo(i, &Service))
+            {
+                service = std::optional(Service);
+                break;
+            }
         }
+
+        // Program
+        TVTest::ProgramInfo Program{};
+        wchar_t pszEventName[EventNameLength];
+        Program.pszEventName = pszEventName;
+        Program.MaxEventName = _countof(pszEventName);
+        wchar_t pszEventText[EventTextLength];
+        Program.pszEventText = pszEventText;
+        Program.MaxEventText = _countof(pszEventText);
+        wchar_t pszEventExtText[EventTextExtLength];
+        Program.pszEventExtText = pszEventExtText;
+        Program.MaxEventExtText = _countof(pszEventExtText);
+        // Program.pszEventText = nullptr;
+        // Program.pszEventExtText = nullptr;
+        const auto program = m_pApp->GetCurrentProgramInfo(&Program) ? std::optional(Program) : std::nullopt;
+
+        // Version
+        auto version = m_pApp->GetVersion();
+
+        auto presence = CreatePresence(service, program, version, m_showEndTime, m_showChannelLogo, m_convertToHalfWidth);
+
+        // 同じ Presence であれば無視
+        if (CheckEquality(presence, m_lastPresence))
+        {
+            return;
+        }
+
+        Discord_UpdatePresence(&presence);
+        m_lastPresence = presence;
+
+        // ログ
+        const auto serviceName = service.has_value() ? service.value().szServiceName : L"(不明)";
+        const auto eventName = program.has_value() ? program.value().pszEventName : L"(不明)";
+        wchar_t buf[512];
+        wsprintf(buf, L"Rich Presence を更新しました。(サービス名: %s, 番組名: %s)", serviceName, eventName);
+        m_pApp->AddLog(buf);
     }
-
-    // Program
-    TVTest::ProgramInfo Program{};
-    wchar_t pszEventName[EventNameLength];
-    Program.pszEventName = pszEventName;
-    Program.MaxEventName = _countof(pszEventName);
-    wchar_t pszEventText[EventTextLength];
-    Program.pszEventText = pszEventText;
-    Program.MaxEventText = _countof(pszEventText);
-    wchar_t pszEventExtText[EventTextExtLength];
-    Program.pszEventExtText = pszEventExtText;
-    Program.MaxEventExtText = _countof(pszEventExtText);
-    // Program.pszEventText = nullptr;
-    // Program.pszEventExtText = nullptr;
-    const auto program = m_pApp->GetCurrentProgramInfo(&Program) ? std::optional(Program) : std::nullopt;
-
-    // Version
-    auto version = m_pApp->GetVersion();
-
-    auto presence = CreatePresence(service, program, version, m_showEndTime, m_showChannelLogo, m_convertToHalfWidth);
-
-    // 同じ Presence であれば無視
-    if (CheckEquality(presence, m_lastPresence))
-    {
-        return;
-    }
-
-    Discord_UpdatePresence(&presence);
-    m_lastPresence = presence;
-
-    // ログ
-    const auto serviceName = service.has_value() ? service.value().szServiceName : L"(不明)";
-    const auto eventName = program.has_value() ? program.value().pszEventName : L"(不明)";
-    wchar_t buf[512];
-    wsprintf(buf, L"Rich Presence を更新しました。(サービス名: %s, 番組名: %s)", serviceName, eventName);
-    m_pApp->AddLog(buf);
 }
 
 /*

@@ -12,6 +12,7 @@
 #include <tchar.h>
 #include <string>
 #include <optional>
+#include <mutex>
 
 #include <Shlwapi.h>
 #pragma comment(lib, "shlwapi.lib")
