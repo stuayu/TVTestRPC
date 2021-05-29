@@ -181,7 +181,10 @@ inline const char* GetGRServiceLogoKey(const WORD serviceId)
 
     case 24632:  // 神奈川: tvk
         return "gr_24632";
-    
+
+    case 47528:  // 広島: テレビ新広島
+        return "gr_47528";
+
     default:
         return nullptr;
     }
