@@ -72,16 +72,17 @@ inline DiscordRichPresence CreatePresence(
     {
         // const wchar_t* → wchar_t*
         // const auto rawServiceName = const_cast<LPWSTR>(Service.value().szServiceName);
-        wchar_t rawServiceName[ServiceNameLength] = {};
-        wcsncpy_s(rawServiceName, Service.value().szServiceName, ServiceNameLength);
+        wchar_t serviceName[ServiceNameLength] = {};
+        const auto rawServiceName = Service.value().szServiceName;
+        wcsncpy_s(serviceName, wcslen(rawServiceName) > 0 ? rawServiceName : L"取得中…", ServiceNameLength);
 
         // 半角変換
         if (ConvertToHalfWidth)
         {
-            Full2Half(rawServiceName);
+            Full2Half(serviceName);
         }
 
-        wcstombs_s(nullptr, details, rawServiceName, ServiceNameLength);
+        wcstombs_s(nullptr, details, serviceName, ServiceNameLength);
     }
 
     // 番組データがあるなら番組名を付与する

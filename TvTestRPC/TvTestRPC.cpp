@@ -29,10 +29,12 @@ class CTvTestRPCPlugin final : public TVTest::CTVTestPlugin
 
 public:
     /*
-     * プラグインのバージョンを返す
+     * プラグインの API バージョンを返す
      */
     DWORD GetVersion() override
     {
+        // 最低要件
+        // どのバージョンの TVTest でも動作する
         return TVTEST_PLUGIN_VERSION_(0, 0, 1);
     }
 
@@ -210,8 +212,12 @@ void CTvTestRPCPlugin::UpdatePresence()
     Discord_UpdatePresence(&presence);
     m_lastPresence = presence;
 
-    // m_pApp->AddLog(L"Presence を更新しました。");
-    // m_pApp->AddLog(program.value().pszEventName);
+    // ログ
+    const auto serviceName = service.has_value() ? service.value().szServiceName : L"(不明)";
+    const auto eventName = program.has_value() ? program.value().pszEventName : L"(不明)";
+    wchar_t buf[512];
+    wsprintf(buf, L"Rich Presence を更新しました。(サービス名: %s, 番組名: %s)", serviceName, eventName);
+    m_pApp->AddLog(buf);
 }
 
 /*
