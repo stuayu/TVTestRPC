@@ -5,16 +5,17 @@
 #include "Logo.h"
 #include "TvtPlay.h"
 #include "Utils.h"
+#include "Version.h"
 
 constexpr auto ServiceNameLength = 32;
 constexpr auto EventNameLength = 128;
 constexpr auto EventTextLength = 128;
 constexpr auto EventTextExtLength = 128;
 
-constexpr auto MaxDetailsLength = 128;
-constexpr auto MaxStateLength = 128;
-constexpr auto MaxImageKeyLength = 32;
-constexpr auto MaxImageTextLength = 128;
+constexpr auto MaxDetailsLength = 256;
+constexpr auto MaxStateLength = 256;
+constexpr auto MaxImageKeyLength = 64;
+constexpr auto MaxImageTextLength = 256;
 
 inline DiscordRichPresence CreatePresence(
     const std::optional<const TVTest::ServiceInfo> Service,
@@ -99,7 +100,7 @@ inline DiscordRichPresence CreatePresence(
         wcstombs_s(nullptr, state, rawEventName, EventNameLength - 1);
     }
 
-    // チャンネルロゴを付与する
+    // チャンネルロゴ or TVTest ロゴを付与する
     if (ShowChannelLogo)
     {
         WORD serviceId = 0;
@@ -144,19 +145,27 @@ inline DiscordRichPresence CreatePresence(
         const auto build = TVTest::GetBuildVersion(Version);
 
         strcpy_s(smallImageKey, LOGO_DEFAULT);
-        sprintf_s(smallImageText, "TVTest %lu.%lu.%lu", major, minor, build);
+        sprintf_s(smallImageText, "TVTest v%lu.%lu.%lu / TvTestRPC v%s", major, minor, build, TvTestRPCVersion);
     }
     
     DiscordRichPresence Presence;
     memset(&Presence, 0, sizeof Presence);
-    Presence.startTimestamp = startTimestamp;
-    Presence.endTimestamp = endTimestamp;
     Presence.details = details;
     Presence.state = state;
+    Presence.startTimestamp = startTimestamp;
+    Presence.endTimestamp = endTimestamp;
     Presence.largeImageKey = largeImageKey;
     Presence.largeImageText = largeImageText;
     Presence.smallImageKey = smallImageKey;
     Presence.smallImageText = smallImageText;
+
+    Presence.partyId = "";
+	Presence.partySize = 0;
+	Presence.partyMax = 0;
+	Presence.matchSecret = "";
+	Presence.joinSecret = "";
+	Presence.spectateSecret = "";
+	Presence.instance = 0;
 
     return Presence;
 }
