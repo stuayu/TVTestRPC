@@ -18,9 +18,6 @@
     <ClInclude Include="stdafx.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="strconv.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
     <ClInclude Include="Utils.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>

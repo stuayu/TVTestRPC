@@ -125,7 +125,7 @@ inline bool isNHKEService(const WORD serviceId)
     }
 }
 
-inline std::string GetGRServiceLogoKey(const WORD serviceId)
+inline const char* GetGRServiceLogoKey(const WORD serviceId)
 {
     // 全国: NHK総合
     if (IsNHKGService(serviceId))
@@ -183,11 +183,11 @@ inline std::string GetGRServiceLogoKey(const WORD serviceId)
         return "gr_24632";
     
     default:
-        return LOGO_DEFAULT;
+        return nullptr;
     }
 }
 
-inline std::string GetBSServiceLogoKey(const WORD serviceId)
+inline const char* GetBSServiceLogoKey(const WORD serviceId)
 {
     switch (serviceId)
     {
@@ -277,8 +277,13 @@ inline std::string GetBSServiceLogoKey(const WORD serviceId)
     }
 }
 
-inline std::string GetServiceLogoKey(const WORD serviceId)
+inline const char* GetServiceLogoKey(const WORD serviceId)
 {
+    if (serviceId == 0)
+    {
+        return LOGO_DEFAULT;
+    }
+
     // BS
     if (serviceId < 1000)
     {
@@ -289,8 +294,7 @@ inline std::string GetServiceLogoKey(const WORD serviceId)
     // サブチャンネルを許容する
     for (WORD i = 0; i < SUB_SERVICE_ID_ALLOWANCE; i++)
     {
-        auto logoKey = GetGRServiceLogoKey(serviceId - i);
-        if (logoKey != LOGO_DEFAULT)
+        if (const auto logoKey = GetGRServiceLogoKey(serviceId - i); logoKey != nullptr)
         {
             return logoKey;
         }

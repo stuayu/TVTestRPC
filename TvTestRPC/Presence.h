@@ -6,28 +6,42 @@
 #include "TvtPlay.h"
 #include "Utils.h"
 
+constexpr auto ServiceNameLength = 32;
+constexpr auto EventNameLength = 128;
+constexpr auto EventTextLength = 128;
+constexpr auto EventTextExtLength = 128;
+
 constexpr auto MaxDetailsLength = 128;
-constexpr auto MaxEventNameLength = 128;
-constexpr auto MaxEventTextLength = 128;
+constexpr auto MaxStateLength = 128;
+constexpr auto MaxImageKeyLength = 32;
 constexpr auto MaxImageTextLength = 128;
 
 inline DiscordRichPresence CreatePresence(
-    const std::optional<TVTest::ServiceInfo> Service,
-    const std::optional<TVTest::ProgramInfo> Program,
+    const std::optional<const TVTest::ServiceInfo> Service,
+    const std::optional<const TVTest::ProgramInfo> Program,
     const DWORD Version,
     const bool ShowEndTime,
     const bool ShowChannelLogo,
     const bool ConvertToHalfWidth
 )
 {
-    DiscordRichPresence Presence;
-    memset(&Presence, 0, sizeof Presence);
+    // ロケールの設定
+    setlocale(LC_ALL, ".utf8");
+
+    // 文字列バッファ等
+    time_t startTimestamp = 0;
+    time_t endTimestamp = 0;
+    char details[MaxDetailsLength] = {};
+    char state[MaxStateLength] = {};
+    char largeImageKey[MaxImageKeyLength] = {};
+    char largeImageText[MaxImageTextLength] = {};
+    char smallImageKey[MaxImageKeyLength] = {};
+    char smallImageText[MaxImageTextLength] = {};
 
     // 番組データがあるなら時間情報を付与する
     if (Program.has_value())
     {
-        int64_t start, end;
-        const auto duration = Program.value().Duration;
+        const auto duration = static_cast<time_t>(Program.value().Duration);
 
         // TvtPlay が有効なら再生位置を加味する
         if (const auto tvtPlayHwnd = FindTvtPlayFrame(); tvtPlayHwnd)
@@ -35,83 +49,113 @@ inline DiscordRichPresence CreatePresence(
             const auto now = time(nullptr);
             const auto pos = GetTvtPlayPositionSec(tvtPlayHwnd);
 
-            start = now + pos;
-            end = now + (static_cast<long long>(duration) - pos);
+            startTimestamp = now + pos;
+            if (ShowEndTime)
+            {
+                endTimestamp = now + (duration - pos);
+            }
         }
         else
         {
-            const auto startTime = Program.value().StartTime;
+            const auto rawStartTime = Program.value().StartTime;
 
-            start = SystemTime2Timet(startTime);
-            end = start + duration;
-        }
-
-        Presence.startTimestamp = start;
-        if (ShowEndTime) {
-            Presence.endTimestamp = end;
+            startTimestamp = SystemTime2Timet(rawStartTime);
+            if (ShowEndTime)
+            {
+                endTimestamp = startTimestamp + duration;
+            }
         }
     }
 
     // サービスデータがあるならサービス名を付与する
-    if (Service.has_value()) {
-        auto rawServiceName = const_cast<LPWSTR>(Service.value().szServiceName);
-        const auto serviceName = WideToUTF8(rawServiceName, ConvertToHalfWidth);
+    if (Service.has_value())
+    {
+        // const wchar_t* → wchar_t*
+        // const auto rawServiceName = const_cast<LPWSTR>(Service.value().szServiceName);
+        wchar_t rawServiceName[ServiceNameLength] = {};
+        wcsncpy_s(rawServiceName, Service.value().szServiceName, ServiceNameLength);
 
-        char details[MaxDetailsLength];
-        strcpy_s(details, serviceName.c_str());
-        Presence.details = details;
+        // 半角変換
+        if (ConvertToHalfWidth)
+        {
+            Full2Half(rawServiceName);
+        }
+
+        wcstombs_s(nullptr, details, rawServiceName, ServiceNameLength);
     }
 
     // 番組データがあるなら番組名を付与する
     if (Program.has_value())
     {
         const auto rawEventName = Program.value().pszEventName;
-        const auto eventName = WideToUTF8(rawEventName, ConvertToHalfWidth);
 
-        Presence.state = eventName.c_str();
+        // 半角変換
+        if (ConvertToHalfWidth)
+        {
+            Full2Half(rawEventName);
+        }
+
+        wcstombs_s(nullptr, state, rawEventName, EventNameLength - 1);
     }
 
     // チャンネルロゴを付与する
     if (ShowChannelLogo)
     {
-        if (Service.has_value()) {
-            const auto serviceId = Service.value().ServiceID;
-            const auto logoKey = GetServiceLogoKey(serviceId);
-
-            Presence.largeImageKey = logoKey.c_str();
-        }
-        else
+        WORD serviceId = 0;
+        if (Service.has_value())
         {
-            Presence.largeImageKey = LOGO_DEFAULT;
+            serviceId = Service.value().ServiceID;
         }
 
-        // 番組データがあるときは番組説明を付与する
+        const auto logoKey = GetServiceLogoKey(serviceId);
+        strcpy_s(largeImageKey, logoKey);
+
+        // 番組データがあるなら番組説明を付与する
         if (Program.has_value())
         {
             if (const auto rawEventText = Program.value().pszEventText; wcslen(rawEventText) > 0)
             {
-                const auto eventText = WideToUTF8(rawEventText, ConvertToHalfWidth);
+                // 半角変換
+                if (ConvertToHalfWidth)
+                {
+                    Full2Half(rawEventText);
+                }
 
-                Presence.largeImageText = eventText.c_str();
+                wcstombs_s(nullptr, largeImageText, rawEventText, EventTextLength - 1);
             }
             else if (const auto rawEventExtText = Program.value().pszEventExtText; wcslen(rawEventExtText) > 0)
             {
-                const auto eventExtText = WideToUTF8(rawEventExtText, ConvertToHalfWidth);
+                // 半角変換
+                if (ConvertToHalfWidth)
+                {
+                    Full2Half(rawEventExtText);
+                }
 
-                Presence.largeImageText = eventExtText.c_str();
+                wcstombs_s(nullptr, largeImageText, rawEventExtText, EventTextExtLength - 1);
             }
         }
     }
 
     // バージョン情報を付与する
-    char tvtestVersion[MaxImageTextLength];
-    const auto major = TVTest::GetMajorVersion(Version);
-    const auto minor = TVTest::GetMinorVersion(Version);
-    const auto build = TVTest::GetBuildVersion(Version);
-    sprintf_s(tvtestVersion, "TVTest %lu.%lu.%lu", major, minor, build);
-    std::string version(tvtestVersion, MaxImageTextLength);
-    Presence.smallImageKey = LOGO_DEFAULT;
-    Presence.smallImageText = version.c_str();
+    {
+        const auto major = TVTest::GetMajorVersion(Version);
+        const auto minor = TVTest::GetMinorVersion(Version);
+        const auto build = TVTest::GetBuildVersion(Version);
+
+        strcpy_s(smallImageKey, LOGO_DEFAULT);
+        sprintf_s(smallImageText, "TVTest %lu.%lu.%lu", major, minor, build);
+    }
+    
+    DiscordRichPresence Presence;
+    memset(&Presence, 0, sizeof Presence);
+    Presence.startTimestamp = startTimestamp;
+    Presence.endTimestamp = endTimestamp;
+    Presence.details = details;
+    Presence.state = state;
+    Presence.largeImageKey = largeImageKey;
+    Presence.largeImageText = largeImageText;
+    Presence.smallImageKey = smallImageKey;
+    Presence.smallImageText = smallImageText;
 
     return Presence;
 }

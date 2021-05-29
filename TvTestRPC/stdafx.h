@@ -7,6 +7,7 @@
 #include <cstdlib>
 #include <cstdint>
 #include <ctime>
+#include <clocale>
 #include <combaseapi.h>
 #include <tchar.h>
 #include <string>

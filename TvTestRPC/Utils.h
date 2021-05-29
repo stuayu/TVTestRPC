@@ -1,7 +1,5 @@
 ﻿#pragma once
 
-#include "strconv.h"
-
 /*
  * SYSTEMTIME 構造体を time_t に変換する
  */
@@ -18,33 +16,19 @@ inline time_t SystemTime2Timet(const SYSTEMTIME& st)
  * 全角 → 半角に変換する
  * http://yamatyuu.net/computer/program/zen2han/index.html
  */
-inline wchar_t* Full2Half(wchar_t* source)
+static void Full2Half(wchar_t* source)
 {
     for (auto* p = source; *p; p++)
     {
-        // 全角数字英字記号の場合
-        if (0xff01 <= *p  && *p <= 0xff5d)
+        // 全角数字英字記号
+        if (0xff01 <= *p && *p <= 0xff5d)
         {
             *p -= 0xff00 - 0x20;
         }
+        // 全角スペース
         else if (*p == L'　')
         {
             *p = L' ';
         }
     }
-
-    return source;
-}
-
-/*
- * WCHAR を std::string に変換する
- */
-inline std::string WideToUTF8(wchar_t* source, const bool asHalfWidth)
-{
-    if (asHalfWidth)
-    {
-        return wide_to_utf8(Full2Half(source));
-    }
-    
-    return wide_to_utf8(source);
 }

@@ -178,7 +178,6 @@
   <ItemGroup>
     <ClInclude Include="Logo.h" />
     <ClInclude Include="Presence.h" />
-    <ClInclude Include="strconv.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="TVTestPlugin.h" />
     <ClInclude Include="Utils.h" />
