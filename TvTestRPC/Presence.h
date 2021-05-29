@@ -170,31 +170,36 @@ inline DiscordRichPresence CreatePresence(
     return Presence;
 }
 
-inline bool CheckEquality(const DiscordRichPresence one, const DiscordRichPresence other)
+enum class PresenceEquality
+{
+    Same, DifferentTimestamp, Different
+};
+
+inline PresenceEquality CheckEquality(const DiscordRichPresence one, const DiscordRichPresence other)
 {
     // 番組の開始時刻が違う
     if (one.startTimestamp != other.startTimestamp)
     {
-        return false;
+        return PresenceEquality::DifferentTimestamp;
     }
 
     // サービス名が違う
     if (one.details != other.details)
     {
-        return false;
+        return PresenceEquality::Different;
     }
 
     // 番組名が違う
     if (one.state != other.state)
     {
-        return false;
+        return PresenceEquality::Different;
     }
 
     // ロゴが違う
     if (one.largeImageKey != other.largeImageKey)
     {
-        return false;
+        return PresenceEquality::Different;
     }
 
-    return true;
+    return PresenceEquality::Same;
 }

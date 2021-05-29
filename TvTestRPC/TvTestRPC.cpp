@@ -177,6 +177,8 @@ void CTvTestRPCPlugin::UpdatePresence()
 
         // Service: サブチャンネルを許容して取得する
         std::optional<TVTest::ServiceInfo> service = std::nullopt;
+
+        // サブチャンネルを考慮する
         for (auto i = 0; i < SUB_SERVICE_ID_ALLOWANCE; i++)
         {
             TVTest::ServiceInfo Service{};
@@ -199,8 +201,6 @@ void CTvTestRPCPlugin::UpdatePresence()
         wchar_t pszEventExtText[EventTextExtLength];
         Program.pszEventExtText = pszEventExtText;
         Program.MaxEventExtText = _countof(pszEventExtText);
-        // Program.pszEventText = nullptr;
-        // Program.pszEventExtText = nullptr;
         const auto program = m_pApp->GetCurrentProgramInfo(&Program) ? std::optional(Program) : std::nullopt;
 
         // Version
@@ -209,7 +209,8 @@ void CTvTestRPCPlugin::UpdatePresence()
         auto presence = CreatePresence(service, program, version, m_showEndTime, m_showChannelLogo, m_convertToHalfWidth);
 
         // 同じ Presence であれば無視
-        if (CheckEquality(presence, m_lastPresence))
+        auto const result = CheckEquality(presence, m_lastPresence);
+        if (result == PresenceEquality::Same)
         {
             return;
         }
@@ -218,9 +219,15 @@ void CTvTestRPCPlugin::UpdatePresence()
         m_lastPresence = presence;
 
         // ログ
+        // タイムスタンプ違いのときは出力しない
+        if (result == PresenceEquality::DifferentTimestamp)
+        {
+            return;
+        }
+
         const auto serviceName = service.has_value() ? service.value().szServiceName : L"(不明)";
         const auto eventName = program.has_value() ? program.value().pszEventName : L"(不明)";
-        wchar_t buf[512];
+        wchar_t buf[128];
         wsprintf(buf, L"Rich Presence を更新しました。(サービス名: %s, 番組名: %s)", serviceName, eventName);
         m_pApp->AddLog(buf);
     }
