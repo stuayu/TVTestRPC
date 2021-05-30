@@ -23,7 +23,8 @@ inline DiscordRichPresence CreatePresence(
     const DWORD Version,
     const bool ShowEndTime,
     const bool ShowChannelLogo,
-    const bool ConvertToHalfWidth
+    const bool ConvertToHalfWidth,
+    std::map<WORD, std::string>& Logos
 )
 {
     // ロケールの設定
@@ -110,7 +111,7 @@ inline DiscordRichPresence CreatePresence(
             serviceId = Service.value().ServiceID;
         }
 
-        const auto logoKey = GetServiceLogoKey(serviceId);
+        const auto logoKey = Logos.count(serviceId) > 0 ? Logos[serviceId].c_str() : GetServiceLogoKey(serviceId);
         strcpy_s(largeImageKey, logoKey);
 
         // 番組データがあるなら番組説明を付与する

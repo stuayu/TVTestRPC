@@ -14,6 +14,7 @@
 #include <optional>
 #include <mutex>
 #include <vector>
+#include <map>
 
 #include <Shlwapi.h>
 #pragma comment(lib, "shlwapi.lib")

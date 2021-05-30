@@ -13,11 +13,12 @@ class CTvTestRPCPlugin final : public TVTest::CTVTestPlugin
     wchar_t m_iniFileName[MAX_PATH]{};
     HWND m_hwnd{};
     std::mutex m_mutex;
+    bool m_isReady = false;
 
     bool m_showEndTime = true;
     bool m_showChannelLogo = true;
     bool m_convertToHalfWidth = true;
-    bool m_isReady = false;
+    std::map<WORD, std::string> m_logos;
 
     void LoadConfig();
     void SaveConfig() const;
@@ -126,6 +127,20 @@ void CTvTestRPCPlugin::LoadConfig()
     m_showEndTime = GetBufferedProfileInt(settings.data(), L"ShowEndTime", m_showEndTime) > 0;
     m_showChannelLogo = GetBufferedProfileInt(settings.data(), L"ShowChannelLogo", m_showChannelLogo) > 0;
     m_convertToHalfWidth = GetBufferedProfileInt(settings.data(), L"ConvertToHalfWidth", m_convertToHalfWidth) > 0;
+
+    const auto logos = GetPrivateProfileSectionBuffer(L"Logos", m_iniFileName);
+    for (auto p = logos.data(); *p; p += wcslen(p) + 1) {
+        WORD serviceId;
+        wchar_t logoKey[MaxImageKeyLength];
+
+		if (swscanf_s(p, L"%d=%s", &serviceId, &logoKey) == 2)
+		{
+            char key[MaxImageKeyLength];
+		    wcstombs_s(nullptr, key, logoKey, MaxImageKeyLength);
+
+            m_logos[serviceId] = key;
+		}
+	}
 }
 
 /*
@@ -196,7 +211,7 @@ void CTvTestRPCPlugin::UpdatePresence()
         // Version
         auto version = m_pApp->GetVersion();
 
-        auto presence = CreatePresence(service, program, version, m_showEndTime, m_showChannelLogo, m_convertToHalfWidth);
+        auto presence = CreatePresence(service, program, version, m_showEndTime, m_showChannelLogo, m_convertToHalfWidth, m_logos);
 
         // 同じ Presence であれば無視
         auto const result = CheckEquality(presence, m_lastPresence);
