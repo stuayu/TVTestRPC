@@ -1,6 +1,7 @@
 # TvTestRPC
 
-[![latest](https://github.com/SlashNephy/TvTestRPC/actions/workflows/latest.yml/badge.svg)](https://github.com/SlashNephy/TvTestRPC/actions/workflows/latest.yml)
+[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/SlashNephy/TvTestRPC/latest?style=flat-square)](https://github.com/SlashNephy/TvTestRPC/actions/workflows/latest.yml)
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/SlashNephy/TvTestRPC?style=flat-square)](https://github.com/SlashNephy/TvTestRPC/releases)
 
 TVTest で Discord Rich Presence を使えるようにするプラグインです。
 
@@ -8,7 +9,10 @@ TVTest で Discord Rich Presence を使えるようにするプラグインで�
 
 ## Get Started
 
-ビルド済み成果物は [ワークフロー](https://github.com/SlashNephy/TvTestRPC/actions/workflows/latest.yml) のビルド履歴 -> Artifacts からダウンロードできます。
+ビルド済み成果物は以下からダウンロードできます。
+
+- ワークフロー [![GitHub Workflow Status](https://img.shields.io/github/workflow/status/SlashNephy/TvTestRPC/latest?style=flat-square)](https://github.com/SlashNephy/TvTestRPC/actions/workflows/latest.yml) のビルド履歴 -> Artifacts
+- [![GitHub release (latest by date)](https://img.shields.io/github/v/release/SlashNephy/TvTestRPC?style=flat-square)](https://github.com/SlashNephy/TvTestRPC/releases)
 
 ## Features
 
@@ -16,13 +20,9 @@ TVTest で Discord Rich Presence を使えるようにするプラグインで�
 
 - TvtPlay プラグインと連携し, ファイル再生時にも経過時間を表示
   - シーク位置を加味して経過時間を計算
-
-- 東京近辺の地上波だけでなく, NHK や BS, 様々な地域の地上波のロゴ表示にも対応  
-
-- 視聴中の番組が終了したときに Presence が更新されないバグを修正  
-
+- 東京近辺の地上波だけでなく, NHK や BS, 様々な地域の地上波のロゴ表示にも対応
+- 視聴中の番組が終了したときに Presence が更新されないバグを修正
 - 全角文字を半角に変換するオプションを追加
-
 - サブチャンネル (TOKYO MX2 等) でも Presence を表示
 
 ## Station Logos
@@ -48,8 +48,7 @@ TVTest で Discord Rich Presence を使えるようにするプラグインで�
 - BS  
   2021/05/29 現在の全局に対応しています。
 
-ロゴ追加のリクエストは Issue/PR でお願いします。「チャンネル名」, 「サービス ID」, 「svg 画像 (推奨) または 512x512 以上の png, jpg 画像」 (`{gr,bs,cs}_{サービス ID}.{svg,jpg}`) をご用意ください。  
-Discord 側の仕様で大きめの画像が必要となっています。また, 最大で 500 個のロゴまでしか対応できません。
+ロゴ追加のリクエストは [Issue](https://github.com/SlashNephy/TvTestRPC/issues/new/choose) からお願いします。
 
 ## Configuration
 
