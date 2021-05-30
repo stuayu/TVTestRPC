@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "stdafx.h"
+#include "Utils.h"
 
 #define LOGO_GR_NHKG "gr_nhkg"
 #define LOGO_GR_NHKE "gr_nhke"
@@ -10,7 +11,7 @@
 /*
  * 対象のサービスが NHK総合 であるかどうか判定する
  */
-inline bool IsNHKGService(const WORD serviceId)
+inline bool IsNHKGService(const WORD serviceId, const wchar_t* serviceName)
 {
     switch (serviceId)
     {
@@ -67,74 +68,74 @@ inline bool IsNHKGService(const WORD serviceId)
     case 63488:  // 沖縄: NHK総合・沖縄
         return true;
     default:
-        return false;
+        return StartsWith(serviceName, L"ＮＨＫ総合");
     }
 }
 
 /*
  * 対象のサービスが NHK教育 であるかどうか判定する
  */
-inline bool isNHKEService(const WORD serviceId)
+inline bool isNHKEService(const WORD serviceId, const wchar_t* serviceName)
 {
     switch (serviceId)
     {
-    case 1032:   // 関東広域: NHK-G
-    case 2056:   // 近畿広域: NHKEテレ大阪
-    case 3080:   // 中京広域: NHKEテレ名古屋
-    case 10248:  // 北海道(札幌): NHKEテレ札幌
-    case 11272:  // 北海道(函館): NHKEテレ函館
-    case 12296:  // 北海道(旭川): NHKEテレ旭川
-    case 13320:  // 北海道(帯広): NHKEテレ帯広
-    case 14344:  // 北海道(釧路): NHKEテレ釧路
-    case 15368:  // 北海道(北見): NHKEテレ北見
-    case 16392:  // 北海道(室蘭): NHKEテレ室蘭
-    case 17416:  // 宮城: NHKEテレ仙台
-    case 18440:  // 秋田: NHKEテレ秋田
-    case 19464:  // 山形: NHKEテレ山形
-    case 20488:  // 岩手: NHKEテレ盛岡
-    case 21512:  // 福島: NHKEテレ福島
-    case 22536:  // 青森: NHKEテレ青森
-    case 30728:  // 長野: NHKEテレ長野
-    case 31752:  // 新潟: NHKEテレ新潟
-    case 32776:  // 山梨: NHKEテレ甲府
-    case 34824:  // 石川: NHKEテレ金沢
-    case 35848:  // 静岡: NHKEテレ静岡
-    case 36872:  // 福井: NHKEテレ福井
-    case 37896:  // 富山: NHKEテレ富山
-    case 47112:  // 広島: NHKEテレ広島
-    case 48136:  // 岡山: NHKEテレ岡山
-    case 49160:  // 島根: NHKEテレ松江
-    case 50184:  // 鳥取: NHKEテレ鳥取
-    case 51208:  // 山口: NHKEテレ山口
-    case 52232:  // 愛媛: NHKEテレ松山
-    case 53256:  // 香川: NHKEテレ高松
-    case 54280:  // 徳島: NHKEテレ徳島
-    case 55304:  // 高知: NHKEテレ高知
-    case 56328:  // 福岡: NHKEテレ福岡
-    case 56840:  // 福岡: NHKEテレ北九州
-    case 57352:  // 熊本: NHKEテレ熊本
-    case 58376:  // 長崎: NHKEテレ長崎
-    case 59400:  // 鹿児島: NHKEテレ鹿児島
-    case 60424:  // 宮崎: NHKEテレ宮崎
-    case 61448:  // 大分: NHKEテレ大分
-    case 62472:  // 佐賀: NHKEテレ佐賀
-    case 63496:  // 沖縄: NHKEテレ沖縄
+    case 1032:   // 関東広域: NHKEテレ・東京
+    case 2056:   // 近畿広域: NHKEテレ・大阪
+    case 3080:   // 中京広域: NHKEテレ・名古屋
+    case 10248:  // 北海道(札幌): NHKEテレ・札幌
+    case 11272:  // 北海道(函館): NHKEテレ・函館
+    case 12296:  // 北海道(旭川): NHKEテレ・旭川
+    case 13320:  // 北海道(帯広): NHKEテレ・帯広
+    case 14344:  // 北海道(釧路): NHKEテレ・釧路
+    case 15368:  // 北海道(北見): NHKEテレ・北見
+    case 16392:  // 北海道(室蘭): NHKEテレ・室蘭
+    case 17416:  // 宮城: NHKEテレ・仙台
+    case 18440:  // 秋田: NHKEテレ・秋田
+    case 19464:  // 山形: NHKEテレ・山形
+    case 20488:  // 岩手: NHKEテレ・盛岡
+    case 21512:  // 福島: NHKEテレ・福島
+    case 22536:  // 青森: NHKEテレ・青森
+    case 30728:  // 長野: NHKEテレ・長野
+    case 31752:  // 新潟: NHKEテレ・新潟
+    case 32776:  // 山梨: NHKEテレ・甲府
+    case 34824:  // 石川: NHKEテレ・金沢
+    case 35848:  // 静岡: NHKEテレ・静岡
+    case 36872:  // 福井: NHKEテレ・福井
+    case 37896:  // 富山: NHKEテレ・富山
+    case 47112:  // 広島: NHKEテレ・広島
+    case 48136:  // 岡山: NHKEテレ・岡山
+    case 49160:  // 島根: NHKEテレ・松江
+    case 50184:  // 鳥取: NHKEテレ・鳥取
+    case 51208:  // 山口: NHKEテレ・山口
+    case 52232:  // 愛媛: NHKEテレ・松山
+    case 53256:  // 香川: NHKEテレ・高松
+    case 54280:  // 徳島: NHKEテレ・徳島
+    case 55304:  // 高知: NHKEテレ・高知
+    case 56328:  // 福岡: NHKEテレ・福岡
+    case 56840:  // 福岡: NHKEテレ・北九州
+    case 57352:  // 熊本: NHKEテレ・熊本
+    case 58376:  // 長崎: NHKEテレ・長崎
+    case 59400:  // 鹿児島: NHKEテレ・鹿児島
+    case 60424:  // 宮崎: NHKEテレ・宮崎
+    case 61448:  // 大分: NHKEテレ・大分
+    case 62472:  // 佐賀: NHKEテレ・佐賀
+    case 63496:  // 沖縄: NHKEテレ・沖縄
         return true;
     default:
-        return false;
+        return StartsWith(serviceName, L"ＮＨＫＥテレ");
     }
 }
 
-inline const char* GetGRServiceLogoKey(const WORD serviceId)
+inline const char* GetGRServiceLogoKey(const WORD serviceId, const wchar_t* serviceName)
 {
     // 全国: NHK総合
-    if (IsNHKGService(serviceId))
+    if (IsNHKGService(serviceId, serviceName))
     {
         return LOGO_GR_NHKG;
     }
 
     // 全国: NHK教育
-    if (isNHKEService(serviceId))
+    if (isNHKEService(serviceId, serviceName))
     {
         return LOGO_GR_NHKE;
     }
@@ -280,7 +281,7 @@ inline const char* GetBSServiceLogoKey(const WORD serviceId)
     }
 }
 
-inline const char* GetServiceLogoKey(const WORD serviceId)
+inline const char* GetServiceLogoKey(const WORD serviceId, const wchar_t* serviceName)
 {
     if (serviceId == 0)
     {
@@ -297,7 +298,7 @@ inline const char* GetServiceLogoKey(const WORD serviceId)
     // サブチャンネルを許容する
     for (WORD i = 0; i < SUB_SERVICE_ID_ALLOWANCE; i++)
     {
-        if (const auto logoKey = GetGRServiceLogoKey(serviceId - i); logoKey != nullptr)
+        if (const auto logoKey = GetGRServiceLogoKey(serviceId - i, serviceName); logoKey != nullptr)
         {
             return logoKey;
         }

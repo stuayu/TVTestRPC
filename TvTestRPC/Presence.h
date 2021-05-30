@@ -106,12 +106,14 @@ inline DiscordRichPresence CreatePresence(
     if (ShowChannelLogo)
     {
         WORD serviceId = 0;
+        wchar_t serviceName[ServiceNameLength]{};
         if (Service.has_value())
         {
             serviceId = Service.value().ServiceID;
+            wcscpy_s(serviceName, Service.value().szServiceName);
         }
 
-        const auto logoKey = Logos.count(serviceId) > 0 ? Logos[serviceId].c_str() : GetServiceLogoKey(serviceId);
+        const auto logoKey = Logos.count(serviceId) > 0 ? Logos[serviceId].c_str() : GetServiceLogoKey(serviceId, serviceName);
         strcpy_s(largeImageKey, logoKey);
 
         // 番組データがあるなら番組説明を付与する

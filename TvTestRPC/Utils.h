@@ -51,6 +51,14 @@ static bool IsBlank(const wchar_t* source, const int maxLength)
     return true;
 }
 
+/*
+ * 与えられた wide 文字列が指定されたプレフィックスで始まるかどうか判定する
+ */
+static bool StartsWith(const wchar_t* source, const wchar_t* prefix)
+{
+    return wcsncmp(source, prefix, wcslen(prefix)) == 0;
+}
+
 #pragma region NicoJK
 // https://github.com/xtne6f/NicoJK/blob/83e7212b8cf4dfd50ac38d71ff1bb2b57c997318/Util.cpp#L45
 
