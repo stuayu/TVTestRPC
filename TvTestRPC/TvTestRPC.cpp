@@ -14,9 +14,9 @@ class CTvTestRPCPlugin final : public TVTest::CTVTestPlugin
     HWND m_hwnd{};
     std::mutex m_mutex;
 
-    bool m_showEndTime = false;
-    bool m_showChannelLogo = false;
-    bool m_convertToHalfWidth = false;
+    bool m_showEndTime = true;
+    bool m_showChannelLogo = true;
+    bool m_convertToHalfWidth = true;
     bool m_isReady = false;
 
     void LoadConfig();
@@ -122,9 +122,10 @@ void CTvTestRPCPlugin::LoadConfig()
     ::GetModuleFileName(g_hinstDLL, m_iniFileName, MAX_PATH);
     ::PathRenameExtension(m_iniFileName, L".ini");
 
-    m_showEndTime = ::GetPrivateProfileInt(L"Settings", L"ShowEndTime", m_showEndTime, m_iniFileName) > 0;
-    m_showChannelLogo = ::GetPrivateProfileInt(L"Settings", L"ShowChannelLogo", m_showChannelLogo, m_iniFileName) > 0;
-    m_convertToHalfWidth = ::GetPrivateProfileInt(L"Settings", L"ConvertToHalfWidth", m_convertToHalfWidth, m_iniFileName) > 0;
+    const auto settings = GetPrivateProfileSectionBuffer(L"Settings", m_iniFileName);
+    m_showEndTime = GetBufferedProfileInt(settings.data(), L"ShowEndTime", m_showEndTime) > 0;
+    m_showChannelLogo = GetBufferedProfileInt(settings.data(), L"ShowChannelLogo", m_showChannelLogo) > 0;
+    m_convertToHalfWidth = GetBufferedProfileInt(settings.data(), L"ConvertToHalfWidth", m_convertToHalfWidth) > 0;
 }
 
 /*
@@ -137,22 +138,9 @@ void CTvTestRPCPlugin::SaveConfig() const
         return;
     }
 
-    struct IntString
-    {
-        wchar_t m_buffer[16];
-        explicit IntString(const int value)
-        {
-            ::wsprintf(m_buffer, L"%d", value);
-        }
-        operator LPCTSTR() const
-        {
-            return m_buffer;
-        }
-    };
-
-    ::WritePrivateProfileString(L"Settings", L"ShowEndTime", IntString(m_showEndTime), m_iniFileName);
-    ::WritePrivateProfileString(L"Settings", L"ShowChannelLogo", IntString(m_showChannelLogo), m_iniFileName);
-    ::WritePrivateProfileString(L"Settings", L"ConvertToHalfWidth", IntString(m_convertToHalfWidth), m_iniFileName);
+    WritePrivateProfileInt(L"Settings", L"ShowEndTime", m_showEndTime, m_iniFileName);
+    WritePrivateProfileInt(L"Settings", L"ShowChannelLogo", m_showChannelLogo, m_iniFileName);
+    WritePrivateProfileInt(L"Settings", L"ConvertToHalfWidth", m_convertToHalfWidth, m_iniFileName);
 }
 
 /*
