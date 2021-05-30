@@ -23,8 +23,8 @@ jobs:
       - name: MSBuild (x64)
         run: msbuild TvTestRPC.sln -property:Configuration="Release" -property:Platform="x64" -m
 
-      - name: MSBuild (Win32)
-        run: msbuild TvTestRPC.sln -property:Configuration="Release" -property:Platform="Win32" -m
+      - name: MSBuild (x86)
+        run: msbuild TvTestRPC.sln -property:Configuration="Release" -property:Platform="x86" -m
 
       - name: Prepare Artifacts
         shell: powershell
