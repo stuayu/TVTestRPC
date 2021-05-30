@@ -131,14 +131,10 @@ void CTvTestRPCPlugin::LoadConfig()
     const auto logos = GetPrivateProfileSectionBuffer(L"Logos", m_iniFileName);
     for (auto p = logos.data(); *p; p += wcslen(p) + 1) {
         WORD serviceId;
-        wchar_t logoKey[MaxImageKeyLength];
 
-		if (swscanf_s(p, L"%d=%s", &serviceId, &logoKey) == 2)
+        if (char logoKey[MaxImageKeyLength]; swscanf_s(p, L"%hd=%S", &serviceId, logoKey, MaxImageKeyLength) == 2)
 		{
-            char key[MaxImageKeyLength];
-		    wcstombs_s(nullptr, key, logoKey, MaxImageKeyLength);
-
-            m_logos[serviceId] = key;
+            m_logos[serviceId] = logoKey;
 		}
 	}
 }
