@@ -8,9 +8,9 @@
 #include "Version.h"
 
 constexpr auto ServiceNameLength = 32;
-constexpr auto EventNameLength = 128;
-constexpr auto EventTextLength = 128;
-constexpr auto EventTextExtLength = 128;
+constexpr auto EventNameLength = 256;
+constexpr auto EventTextLength = 256;
+constexpr auto EventTextExtLength = 256;
 
 constexpr auto MaxDetailsLength = 256;
 constexpr auto MaxStateLength = 256;
@@ -97,7 +97,7 @@ inline DiscordRichPresence CreatePresence(
                 Full2Half(rawEventName);
             }
 
-            wcstombs_s(nullptr, state, rawEventName, EventNameLength - 1);
+            wcstombs_s(nullptr, state, rawEventName, EventNameLength);
         }
     }
 
@@ -124,7 +124,7 @@ inline DiscordRichPresence CreatePresence(
                     Full2Half(rawEventText);
                 }
 
-                wcstombs_s(nullptr, largeImageText, rawEventText, EventTextLength - 1);
+                wcstombs_s(nullptr, largeImageText, rawEventText, EventTextLength);
             }
             else if (const auto rawEventExtText = Program.value().pszEventExtText; rawEventExtText != nullptr && !IsBlank(rawEventExtText, EventTextExtLength))
             {
@@ -134,7 +134,7 @@ inline DiscordRichPresence CreatePresence(
                     Full2Half(rawEventExtText);
                 }
 
-                wcstombs_s(nullptr, largeImageText, rawEventExtText, EventTextExtLength - 1);
+                wcstombs_s(nullptr, largeImageText, rawEventExtText, EventTextExtLength);
             }
         }
     }
