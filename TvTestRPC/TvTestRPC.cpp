@@ -136,6 +136,7 @@ void CTvTestRPCPlugin::SaveConfig() const
     {
         return;
     }
+
     struct IntString
     {
         wchar_t m_buffer[16];
@@ -148,6 +149,7 @@ void CTvTestRPCPlugin::SaveConfig() const
             return m_buffer;
         }
     };
+
     ::WritePrivateProfileString(L"Settings", L"ShowEndTime", IntString(m_showEndTime), m_iniFileName);
     ::WritePrivateProfileString(L"Settings", L"ShowChannelLogo", IntString(m_showChannelLogo), m_iniFileName);
     ::WritePrivateProfileString(L"Settings", L"ConvertToHalfWidth", IntString(m_convertToHalfWidth), m_iniFileName);
@@ -225,9 +227,9 @@ void CTvTestRPCPlugin::UpdatePresence()
             return;
         }
 
-        const auto serviceName = service.has_value() ? service.value().szServiceName : L"(不明)";
-        const auto eventName = program.has_value() ? program.value().pszEventName : L"(不明)";
-        wchar_t buf[128];
+        const auto serviceName = service.has_value() && !IsBlank(service.value().szServiceName, ServiceNameLength) ? service.value().szServiceName : L"[不明]";
+        const auto eventName = program.has_value() && !IsBlank(program.value().pszEventName, EventNameLength) ? program.value().pszEventName : L"[不明]";
+        wchar_t buf[256];
         wsprintf(buf, L"Rich Presence を更新しました。(サービス名: %s, 番組名: %s)", serviceName, eventName);
         m_pApp->AddLog(buf);
     }

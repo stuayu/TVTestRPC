@@ -32,3 +32,16 @@ static void Full2Half(wchar_t* source)
         }
     }
 }
+
+static bool IsBlank(const wchar_t* source, const int maxLength)
+{
+    for (auto i = 0; i < maxLength && source[i] != L'\0'; i++)
+    {
+        if (!iswblank(source[i]))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}

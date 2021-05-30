@@ -75,7 +75,7 @@ inline DiscordRichPresence CreatePresence(
         // const auto rawServiceName = const_cast<LPWSTR>(Service.value().szServiceName);
         wchar_t serviceName[ServiceNameLength] = {};
         const auto rawServiceName = Service.value().szServiceName;
-        wcsncpy_s(serviceName, wcslen(rawServiceName) > 0 ? rawServiceName : L"取得中…", ServiceNameLength);
+        wcsncpy_s(serviceName, !IsBlank(rawServiceName, ServiceNameLength) ? rawServiceName : L"取得中…", ServiceNameLength);
 
         // 半角変換
         if (ConvertToHalfWidth)
@@ -89,15 +89,16 @@ inline DiscordRichPresence CreatePresence(
     // 番組データがあるなら番組名を付与する
     if (Program.has_value())
     {
-        const auto rawEventName = Program.value().pszEventName;
-
-        // 半角変換
-        if (ConvertToHalfWidth)
+        if (const auto rawEventName = Program.value().pszEventName; !IsBlank(rawEventName, EventNameLength))
         {
-            Full2Half(rawEventName);
-        }
+            // 半角変換
+            if (ConvertToHalfWidth)
+            {
+                Full2Half(rawEventName);
+            }
 
-        wcstombs_s(nullptr, state, rawEventName, EventNameLength - 1);
+            wcstombs_s(nullptr, state, rawEventName, EventNameLength - 1);
+        }
     }
 
     // チャンネルロゴ or TVTest ロゴを付与する
@@ -115,7 +116,7 @@ inline DiscordRichPresence CreatePresence(
         // 番組データがあるなら番組説明を付与する
         if (Program.has_value())
         {
-            if (const auto rawEventText = Program.value().pszEventText; wcslen(rawEventText) > 0)
+            if (const auto rawEventText = Program.value().pszEventText; rawEventText != nullptr && !IsBlank(rawEventText, EventTextLength))
             {
                 // 半角変換
                 if (ConvertToHalfWidth)
@@ -125,7 +126,7 @@ inline DiscordRichPresence CreatePresence(
 
                 wcstombs_s(nullptr, largeImageText, rawEventText, EventTextLength - 1);
             }
-            else if (const auto rawEventExtText = Program.value().pszEventExtText; wcslen(rawEventExtText) > 0)
+            else if (const auto rawEventExtText = Program.value().pszEventExtText; rawEventExtText != nullptr && !IsBlank(rawEventExtText, EventTextExtLength))
             {
                 // 半角変換
                 if (ConvertToHalfWidth)
