@@ -6,6 +6,7 @@ on:
       - '*.sln'
       - 'TvTestRPC/*'
       - 'Thirdparty/*'
+      - '.github/workflows/latest.yml'
 
   workflow_dispatch:
 
@@ -30,6 +31,8 @@ jobs:
         shell: powershell
         run: |
           New-Item -Path Artifacts -ItemType Directory
+          New-Item -Path Artifacts/x64 -ItemType Directory
+          New-Item -Path Artifacts/x86 -ItemType Directory
           Copy-Item -Path x64/Release/TvTestRPC.tvtp -Destination Artifacts/x64/
           Copy-Item -Path Release/TvTestRPC.tvtp -Destination Artifacts/x86/
           Copy-Item -Path TvTestRPC.ini -Destination Artifacts/
