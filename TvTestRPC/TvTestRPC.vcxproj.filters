@@ -24,9 +24,6 @@
     <ClInclude Include="Logo.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="TVTestPlugin.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
     <ClInclude Include="Presence.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
