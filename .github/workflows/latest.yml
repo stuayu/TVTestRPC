@@ -37,7 +37,7 @@ jobs:
       - name: Upload Artifacts
         uses: actions/upload-artifact@v2
         with:
-          name: TvTestRPC_v${{ github.ref }}_${{ matrix.platform }}
+          name: TvTestRPC_${{ matrix.platform }}
           if-no-files-found: error
           path: Artifacts/
 
