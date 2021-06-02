@@ -142,19 +142,31 @@ inline const char* GetGRServiceLogoKey(const WORD serviceId, const wchar_t* serv
     {
         return LOGO_GR_NHKE;
     }
-    
+
+    // http://soranikakaruhashi.blog.fc2.com/blog-entry-71.html
     switch (serviceId)
     {
     case 1040:   // 関東広域: 日テレ
         return "gr_1040";
-    case 1064:   // 関東広域: テレビ朝日
-        return "gr_1064";
     case 1048:   // 関東広域: TBS
         return "gr_1048";
-    case 1072:   // 関東広域: テレビ東京
-        return "gr_1072";
     case 1056:   // 関東広域: フジテレビ
         return "gr_1056";
+    case 1064:   // 関東広域: テレビ朝日
+        return "gr_1064";
+    case 1072:   // 関東広域: テレビ東京
+        return "gr_1072";
+    case 1088:   // 関東広域: 放送大学
+        return "bs_231";
+
+    case 2064:   // 近畿広域: MBS 毎日放送
+        return "gr_2064";
+    case 2072:   // 近畿広域: ABCテレビ
+        return "gr_2072";
+    case 2080:   // 近畿広域: 関西テレビ
+        return "gr_2080";
+    case 2088:   // 近畿広域: 読売テレビ
+        return "gr_2088";
 
     case 17440:  // 宮城: ミヤギテレビ
         return "gr_17440";
@@ -185,6 +197,9 @@ inline const char* GetGRServiceLogoKey(const WORD serviceId, const wchar_t* serv
         return "gr_37912";
     case 38008:  // 富山: コミュチャン091 (CATV)
         return "gr_38008";
+
+    case 43056:  // 兵庫: サンテレビ
+        return "gr_43056";
 
     case 47528:  // 広島: テレビ新広島
         return "gr_47528";
