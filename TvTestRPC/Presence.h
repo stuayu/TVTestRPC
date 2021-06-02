@@ -20,7 +20,7 @@ constexpr auto MaxImageTextLength = 256;
 inline DiscordRichPresence CreatePresence(
     const std::optional<const TVTest::ServiceInfo> Service,
     const std::optional<const TVTest::ProgramInfo> Program,
-    const DWORD Version,
+    const std::optional<const TVTest::HostInfo> Host,
     const bool ShowEndTime,
     const bool ShowChannelLogo,
     const bool ConvertToHalfWidth,
@@ -144,12 +144,11 @@ inline DiscordRichPresence CreatePresence(
 
     // バージョン情報を付与する
     {
-        const auto major = TVTest::GetMajorVersion(Version);
-        const auto minor = TVTest::GetMinorVersion(Version);
-        const auto build = TVTest::GetBuildVersion(Version);
-
         strcpy_s(smallImageKey, LOGO_DEFAULT);
-        sprintf_s(smallImageText, "TVTest v%lu.%lu.%lu / TvTestRPC v%s", major, minor, build, TvTestRPCVersion);
+
+        if (Host.has_value()) {
+            sprintf_s(smallImageText, "%ws v%ws / TvTestRPC v%s", Host.value().pszAppName, Host.value().pszVersionText, TvTestRPCVersion);
+        }
     }
     
     DiscordRichPresence Presence;

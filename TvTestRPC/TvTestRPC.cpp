@@ -35,9 +35,8 @@ public:
      */
     DWORD GetVersion() override
     {
-        // 最低要件
-        // どのバージョンの TVTest でも動作する
-        return TVTEST_PLUGIN_VERSION_(0, 0, 1);
+        // TVTest ver.0.6.0 or later
+        return TVTEST_PLUGIN_VERSION_(0, 0, 8);
     }
 
     /*
@@ -46,6 +45,7 @@ public:
     bool GetPluginInfo(TVTest::PluginInfo* pInfo) override
     {
         pInfo->Type = TVTest::PLUGIN_TYPE_NORMAL;
+        pInfo->Flags = 0;
         pInfo->pszPluginName = L"Discord Rich Presence";
         pInfo->pszCopyright = L"© 2021 Nep, 2019-2020 noriokun4649";
         pInfo->pszDescription = L"Discord Rich Presence を表示します。";
@@ -204,10 +204,11 @@ void CTvTestRPCPlugin::UpdatePresence()
         Program.MaxEventExtText = _countof(pszEventExtText);
         const auto program = m_pApp->GetCurrentProgramInfo(&Program) ? std::optional(Program) : std::nullopt;
 
-        // Version
-        auto version = m_pApp->GetVersion();
+        // Host
+        TVTest::HostInfo Host{};
+        const auto host = m_pApp->GetHostInfo(&Host) ? std::optional(Host) : std::nullopt;
 
-        auto presence = CreatePresence(service, program, version, m_showEndTime, m_showChannelLogo, m_convertToHalfWidth, m_logos);
+        auto presence = CreatePresence(service, program, host, m_showEndTime, m_showChannelLogo, m_convertToHalfWidth, m_logos);
 
         // 同じ Presence であれば無視
         auto const result = CheckEquality(presence, m_lastPresence);
