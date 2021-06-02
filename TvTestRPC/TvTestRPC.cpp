@@ -18,6 +18,7 @@ class CTvTestRPCPlugin final : public TVTest::CTVTestPlugin
     bool m_showEndTime = true;
     bool m_showChannelLogo = true;
     bool m_convertToHalfWidth = true;
+    bool m_ignoreTuningSpace = false;
     std::map<WORD, std::string> m_logos;
 
     void LoadConfig();
@@ -127,6 +128,7 @@ void CTvTestRPCPlugin::LoadConfig()
     m_showEndTime = GetBufferedProfileInt(settings.data(), L"ShowEndTime", m_showEndTime) > 0;
     m_showChannelLogo = GetBufferedProfileInt(settings.data(), L"ShowChannelLogo", m_showChannelLogo) > 0;
     m_convertToHalfWidth = GetBufferedProfileInt(settings.data(), L"ConvertToHalfWidth", m_convertToHalfWidth) > 0;
+    m_ignoreTuningSpace = GetBufferedProfileInt(settings.data(), L"IgnoreTuningSpace", m_ignoreTuningSpace) > 0;
 
     const auto logos = GetPrivateProfileSectionBuffer(L"Logos", m_iniFileName);
     for (auto p = logos.data(); *p; p += wcslen(p) + 1) {
@@ -152,6 +154,7 @@ void CTvTestRPCPlugin::SaveConfig() const
     WritePrivateProfileInt(L"Settings", L"ShowEndTime", m_showEndTime, m_iniFileName);
     WritePrivateProfileInt(L"Settings", L"ShowChannelLogo", m_showChannelLogo, m_iniFileName);
     WritePrivateProfileInt(L"Settings", L"ConvertToHalfWidth", m_convertToHalfWidth, m_iniFileName);
+    WritePrivateProfileInt(L"Settings", L"IgnoreTuningSpace", m_ignoreTuningSpace, m_iniFileName);
 }
 
 /*
@@ -179,7 +182,7 @@ void CTvTestRPCPlugin::UpdatePresence()
         // TuningSpace
         std::optional<TuningSpace> tuningSpace = std::nullopt;
         TVTest::TuningSpaceInfo TuningSpace{};
-        if (m_pApp->GetTuningSpaceInfo(m_pApp->GetTuningSpace(), &TuningSpace))
+        if (!m_ignoreTuningSpace && m_pApp->GetTuningSpaceInfo(m_pApp->GetTuningSpace(), &TuningSpace))
         {
             tuningSpace = GetTuningSpaceByName(TuningSpace.szName);
             if (!tuningSpace.has_value())

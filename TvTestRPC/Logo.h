@@ -17,6 +17,7 @@ inline bool IsNHKGService(const WORD serviceId, const wchar_t* serviceName)
     switch (serviceId)
     {
     case 1024:   // 関東広域: NHK総合・東京
+
     case 10240:  // 北海道(札幌): NHK総合・札幌
     case 11264:  // 北海道(函館): NHK総合・函館
     case 12288:  // 北海道(旭川): NHK総合・旭川
@@ -83,6 +84,7 @@ inline bool isNHKEService(const WORD serviceId, const wchar_t* serviceName)
     case 1032:   // 関東広域: NHKEテレ・東京
     case 2056:   // 近畿広域: NHKEテレ・大阪
     case 3080:   // 中京広域: NHKEテレ・名古屋
+
     case 10248:  // 北海道(札幌): NHKEテレ・札幌
     case 11272:  // 北海道(函館): NHKEテレ・函館
     case 12296:  // 北海道(旭川): NHKEテレ・旭川
@@ -143,22 +145,16 @@ inline const char* GetGRServiceLogoKey(const WORD serviceId, const wchar_t* serv
     
     switch (serviceId)
     {
-    case 1040:   // 関東: 日テレ
+    case 1040:   // 関東広域: 日テレ
         return "gr_1040";
-    case 1064:   // 関東: テレビ朝日
+    case 1064:   // 関東広域: テレビ朝日
         return "gr_1064";
-    case 1048:   // 関東: TBS
+    case 1048:   // 関東広域: TBS
         return "gr_1048";
-    case 1072:   // 関東: テレビ東京
+    case 1072:   // 関東広域: テレビ東京
         return "gr_1072";
-    case 1056:   // 関東: フジテレビ
+    case 1056:   // 関東広域: フジテレビ
         return "gr_1056";
-
-    case 23608:  // 東京: TOKYO MX
-        return "gr_23608";
-    case 24680:  // 東京: イッツコムch10 (CATV)
-    case 24696:  // 東京: イッツコムch11 (CATV)
-        return "gr_24680";
 
     case 17440:  // 宮城: ミヤギテレビ
         return "gr_17440";
@@ -169,6 +165,18 @@ inline const char* GetGRServiceLogoKey(const WORD serviceId, const wchar_t* serv
     case 17432:  // 宮城: 仙台放送
         return "gr_17432";
 
+    case 23608:  // 東京: TOKYO MX
+        return "gr_23608";
+    
+    case 24632:  // 神奈川: tvk
+        return "gr_24632";
+    case 24680:  // 神奈川: イッツコムch10 (CATV)
+    case 24696:  // 神奈川: イッツコムch11 (CATV)
+        return "gr_24680";
+
+    case 34840:  // 石川: HAB
+        return "gr_34840";
+
     case 37904:  // 富山: KNB
         return "gr_37904";
     case 37920:  // 富山: チューリップテレビ
@@ -177,12 +185,6 @@ inline const char* GetGRServiceLogoKey(const WORD serviceId, const wchar_t* serv
         return "gr_37912";
     case 38008:  // 富山: コミュチャン091 (CATV)
         return "gr_38008";
-
-    case 34840:  // 石川: HAB
-        return "gr_34840";
-
-    case 24632:  // 神奈川: tvk
-        return "gr_24632";
 
     case 47528:  // 広島: テレビ新広島
         return "gr_47528";
