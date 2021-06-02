@@ -44,12 +44,12 @@ jobs:
       - name: Create Release
         shell: powershell
         if: startsWith(github.ref, 'refs/tags/')
-        run: Compress-Archive -Path Artifacts/* -DestinationPath TvTestRPC_v${{ github.ref }}_${{ matrix.platform }}.zip
+        run: Compress-Archive -Path Artifacts/* -DestinationPath TvTestRPC_${{ matrix.platform }}.zip
 
       - name: Upload Release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: TvTestRPC_v${{ github.ref }}_${{ matrix.platform }}.zip
+          files: TvTestRPC_${{ matrix.platform }}.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
