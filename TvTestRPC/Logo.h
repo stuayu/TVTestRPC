@@ -1,12 +1,13 @@
 ﻿#pragma once
 
 #include "stdafx.h"
+
 #include "Utils.h"
 
-#define LOGO_GR_NHKG "gr_nhkg"
-#define LOGO_GR_NHKE "gr_nhke"
-#define LOGO_DEFAULT "logo"
-#define SUB_SERVICE_ID_ALLOWANCE 3
+constexpr auto LOGO_GR_NHKG = "gr_nhkg";
+constexpr auto LOGO_GR_NHKE = "gr_nhke";
+constexpr auto LOGO_DEFAULT = "logo";
+constexpr auto SUB_SERVICE_ID_ALLOWANCE = 3;
 
 /*
  * 対象のサービスが NHK総合 であるかどうか判定する
@@ -281,17 +282,44 @@ inline const char* GetBSServiceLogoKey(const WORD serviceId)
     }
 }
 
-inline const char* GetServiceLogoKey(const WORD serviceId, const wchar_t* serviceName)
+inline const char* GetCSServiceLogoKey(const WORD serviceId)
+{
+    return LOGO_DEFAULT;
+}
+
+inline const char* GetSKYServiceLogoKey(const WORD serviceId)
+{
+    return LOGO_DEFAULT;
+}
+
+enum class TuningSpace
+{
+    GR, BS, CS, SKY
+};
+
+inline const char* GetAmbiguousServiceLogoKey(const WORD serviceId, const wchar_t* serviceName)
 {
     if (serviceId == 0)
     {
         return LOGO_DEFAULT;
     }
 
-    // BS
+    // BS or CS or SKY
     if (serviceId < 1000)
     {
-        return GetBSServiceLogoKey(serviceId);
+        auto logoKey = GetBSServiceLogoKey(serviceId);
+        if (logoKey != LOGO_DEFAULT)
+        {
+            return logoKey;
+        }
+
+        logoKey = GetCSServiceLogoKey(serviceId);
+        if (logoKey != LOGO_DEFAULT)
+        {
+            return logoKey;
+        }
+
+        return GetSKYServiceLogoKey(serviceId);
     }
 
     // GR
@@ -305,4 +333,101 @@ inline const char* GetServiceLogoKey(const WORD serviceId, const wchar_t* servic
     }
 
     return LOGO_DEFAULT;
+}
+
+inline const char* GetServiceLogoKey(const std::optional<TuningSpace> tuningSpace, const WORD serviceId, const wchar_t* serviceName)
+{
+    if (!tuningSpace.has_value())
+    {
+        return GetAmbiguousServiceLogoKey(serviceId, serviceName);
+    }
+
+    if (serviceId == 0)
+    {
+        return LOGO_DEFAULT;
+    }
+
+    switch (tuningSpace.value())
+    {
+    // GR
+    case TuningSpace::GR:
+        // サブチャンネルを許容する
+        for (WORD i = 0; i < SUB_SERVICE_ID_ALLOWANCE; i++)
+        {
+            if (const auto logoKey = GetGRServiceLogoKey(serviceId - i, serviceName); logoKey != nullptr)
+            {
+                return logoKey;
+            }
+        }
+
+        return LOGO_DEFAULT;
+
+    // BS
+    case TuningSpace::BS:
+        return GetBSServiceLogoKey(serviceId);
+
+    // CS
+    case TuningSpace::CS:
+        return GetCSServiceLogoKey(serviceId);
+
+    // SKY
+    case TuningSpace::SKY:
+        return GetSKYServiceLogoKey(serviceId);
+    }
+
+    return LOGO_DEFAULT;
+}
+
+inline std::string GetTuningSpaceName(const TuningSpace type)
+{
+    switch (type)
+    {
+    case TuningSpace::GR:
+        return "GR";
+    case TuningSpace::BS:
+        return "BS";
+    case TuningSpace::CS:
+        return "CS";
+    case TuningSpace::SKY:
+        return "SKY";
+    }
+
+    throw;
+}
+
+inline std::optional<TuningSpace> GetTuningSpaceByName(const std::wstring& name)
+{
+    if (name == L"GR")
+    {
+        return std::optional(TuningSpace::GR);
+    }
+    if (name == L"BS")
+    {
+        return std::optional(TuningSpace::BS);
+    }
+    if (name == L"CS")
+    {
+        return std::optional(TuningSpace::CS);
+    }
+    if (name == L"SKY")
+    {
+        return std::optional(TuningSpace::SKY);
+    }
+
+    return std::nullopt;
+}
+
+inline std::optional<TuningSpace> GetTuningSpaceByIndex(const int index)
+{
+    switch (index)
+    {
+    case TVTest::TUNINGSPACE_TERRESTRIAL:
+        return std::optional(TuningSpace::GR);
+    case TVTest::TUNINGSPACE_BS:
+        return std::optional(TuningSpace::BS);
+    case TVTest::TUNINGSPACE_110CS:
+        return std::optional(TuningSpace::CS);
+    default: 
+        return std::nullopt;
+    }
 }

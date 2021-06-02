@@ -18,6 +18,7 @@ constexpr auto MaxImageKeyLength = 64;
 constexpr auto MaxImageTextLength = 256;
 
 inline DiscordRichPresence CreatePresence(
+    const std::optional<const TuningSpace> TuningSpace,
     const std::optional<const TVTest::ServiceInfo> Service,
     const std::optional<const TVTest::ProgramInfo> Program,
     const std::optional<const TVTest::HostInfo> Host,
@@ -113,7 +114,7 @@ inline DiscordRichPresence CreatePresence(
             wcscpy_s(serviceName, Service.value().szServiceName);
         }
 
-        const auto logoKey = Logos.count(serviceId) > 0 ? Logos[serviceId].c_str() : GetServiceLogoKey(serviceId, serviceName);
+        const auto logoKey = Logos.count(serviceId) > 0 ? Logos[serviceId].c_str() : GetServiceLogoKey(TuningSpace, serviceId, serviceName);
         strcpy_s(largeImageKey, logoKey);
 
         // 番組データがあるなら番組説明を付与する

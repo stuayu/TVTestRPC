@@ -176,6 +176,18 @@ void CTvTestRPCPlugin::UpdatePresence()
     {
         std::lock_guard lock(m_mutex);
 
+        // TuningSpace
+        std::optional<TuningSpace> tuningSpace = std::nullopt;
+        TVTest::TuningSpaceInfo TuningSpace{};
+        if (m_pApp->GetTuningSpaceInfo(m_pApp->GetTuningSpace(), &TuningSpace))
+        {
+            tuningSpace = GetTuningSpaceByName(TuningSpace.szName);
+            if (!tuningSpace.has_value())
+            {
+                tuningSpace = GetTuningSpaceByIndex(TuningSpace.Space);
+            }
+        }
+
         // Service: サブチャンネルを許容して取得する
         std::optional<TVTest::ServiceInfo> service = std::nullopt;
 
@@ -208,7 +220,7 @@ void CTvTestRPCPlugin::UpdatePresence()
         TVTest::HostInfo Host{};
         const auto host = m_pApp->GetHostInfo(&Host) ? std::optional(Host) : std::nullopt;
 
-        auto presence = CreatePresence(service, program, host, m_showEndTime, m_showChannelLogo, m_convertToHalfWidth, m_logos);
+        auto presence = CreatePresence(tuningSpace, service, program, host, m_showEndTime, m_showChannelLogo, m_convertToHalfWidth, m_logos);
 
         // 同じ Presence であれば無視
         auto const result = CheckEquality(presence, m_lastPresence);
