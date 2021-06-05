@@ -23,14 +23,19 @@ static void Full2Half(wchar_t* source)
     for (auto* p = source; *p; p++)
     {
         // 全角数字英字記号
-        if (0xff01 <= *p && *p <= 0xff5d)
+        if (0xff01 <= *p && *p <= 0xff5e)
         {
             *p -= 0xff00 - 0x20;
         }
-            // 全角スペース
+        // 全角スペース
         else if (*p == L'　')
         {
             *p = L' ';
+        }
+        // 全角ハイフン (AT-X)
+        else if (*p == L'−')
+        {
+            *p = L'-';
         }
     }
 }
