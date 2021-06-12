@@ -53,7 +53,7 @@ inline DiscordRichPresence CreatePresence(
             const auto pos = GetTvtPlayPositionSec(tvtPlayHwnd);
 
             startTimestamp = now + pos;
-            if (ShowEndTime)
+            if (ShowEndTime && duration > 0)
             {
                 endTimestamp = now + (duration - pos);
             }
@@ -63,7 +63,7 @@ inline DiscordRichPresence CreatePresence(
             const auto rawStartTime = Program.value().StartTime;
 
             startTimestamp = SystemTime2Timet(rawStartTime);
-            if (ShowEndTime)
+            if (ShowEndTime && duration > 0)
             {
                 endTimestamp = startTimestamp + duration;
             }
