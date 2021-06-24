@@ -27,7 +27,7 @@ TVTest で Discord Rich Presence を使えるようにするプラグインで�
 
 ## Station Logos
 
-現在, 次の放送局ロゴに対応しています。`assets` ディレクトリに使用しているロゴファイルを置いています。
+現在, 次の放送局ロゴに対応しています。ロゴは Wikipedia 上で公開されているもので Public Domain となっています。
 
 - 地上波
   - 全国  
