@@ -23,4 +23,4 @@
 #define TVTEST_PLUGIN_CLASS_IMPLEMENT
 #include "TVTestPlugin.h"
 
-#include "discord_rpc.h"
+#include "discord-game-sdk/discord.h"

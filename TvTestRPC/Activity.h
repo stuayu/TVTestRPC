@@ -7,17 +7,14 @@
 #include "Utils.h"
 #include "Version.h"
 
+constexpr auto MaxDetailsLength = 128;
+constexpr auto MaxStateLength = 128;
+constexpr auto MaxImageKeyLength = 128;
+constexpr auto MaxImageTextLength = 128;
+
 constexpr auto ServiceNameLength = 32;
-constexpr auto EventNameLength = 256;
-constexpr auto EventTextLength = 256;
-constexpr auto EventTextExtLength = 256;
 
-constexpr auto MaxDetailsLength = 256;
-constexpr auto MaxStateLength = 256;
-constexpr auto MaxImageKeyLength = 64;
-constexpr auto MaxImageTextLength = 256;
-
-inline DiscordRichPresence CreatePresence(
+inline DiscordActivity CreatePresence(
     const std::optional<const TuningSpace> TuningSpace,
     const std::optional<const TVTest::ServiceInfo> Service,
     const std::optional<const TVTest::ProgramInfo> Program,
@@ -28,15 +25,8 @@ inline DiscordRichPresence CreatePresence(
     // ロケールの設定
     setlocale(LC_ALL, ".utf8");
 
-    // 文字列バッファ等
-    time_t startTimestamp = 0;
-    time_t endTimestamp = 0;
-    char details[MaxDetailsLength] = {};
-    char state[MaxStateLength] = {};
-    char largeImageKey[MaxImageKeyLength] = {};
-    char largeImageText[MaxImageTextLength] = {};
-    char smallImageKey[MaxImageKeyLength] = {};
-    char smallImageText[MaxImageTextLength] = {};
+    DiscordActivity Activity{};
+    memset(&Activity, 0, sizeof Activity);
 
     // 番組データがあるなら時間情報を付与する
     if (Program.has_value())
@@ -49,20 +39,20 @@ inline DiscordRichPresence CreatePresence(
             const auto now = time(nullptr);
             const auto pos = GetTvtPlayPositionSec(tvtPlayHwnd);
 
-            startTimestamp = now + pos;
+            Activity.timestamps.start = now + pos;
             if (Config.ShowEndTime && duration > 0)
             {
-                endTimestamp = now + (duration - pos);
+                Activity.timestamps.end = now + (duration - pos);
             }
         }
         else
         {
             const auto rawStartTime = Program.value().StartTime;
 
-            startTimestamp = SystemTime2Timet(rawStartTime);
+            Activity.timestamps.start = SystemTime2Timet(rawStartTime);
             if (Config.ShowEndTime && duration > 0)
             {
-                endTimestamp = startTimestamp + duration;
+                Activity.timestamps.end = Activity.timestamps.start + duration;
             }
         }
     }
@@ -82,13 +72,13 @@ inline DiscordRichPresence CreatePresence(
             Full2Half(serviceName);
         }
 
-        wcstombs_s(nullptr, details, serviceName, ServiceNameLength - 1);
+        wcstombs_s(nullptr, Activity.details, serviceName, ServiceNameLength - 1);
     }
 
     // 番組データがあるなら番組名を付与する
     if (Program.has_value())
     {
-        if (const auto rawEventName = Program.value().pszEventName; !IsBlank(rawEventName, EventNameLength))
+        if (const auto rawEventName = Program.value().pszEventName; !IsBlank(rawEventName, MaxStateLength))
         {
             // 半角変換
             if (Config.ConvertToHalfWidth)
@@ -96,7 +86,7 @@ inline DiscordRichPresence CreatePresence(
                 Full2Half(rawEventName);
             }
 
-            wcstombs_s(nullptr, state, rawEventName, EventNameLength - 1);
+            wcstombs_s(nullptr, Activity.state, rawEventName, MaxStateLength - 1);
         }
     }
 
@@ -112,12 +102,12 @@ inline DiscordRichPresence CreatePresence(
         }
 
         const auto logoKey = Config.Logos.count(serviceId) > 0 ? Config.Logos[serviceId].c_str() : GetServiceLogoKey(TuningSpace, serviceId, serviceName);
-        strcpy_s(largeImageKey, logoKey);
+        strcpy_s(Activity.assets.large_image, logoKey);
 
         // 番組データがあるなら番組説明を付与する
         if (Program.has_value())
         {
-            if (const auto rawEventText = Program.value().pszEventText; rawEventText != nullptr && !IsBlank(rawEventText, EventTextLength))
+            if (const auto rawEventText = Program.value().pszEventText; rawEventText != nullptr && !IsBlank(rawEventText, MaxImageTextLength))
             {
                 // 半角変換
                 if (Config.ConvertToHalfWidth)
@@ -125,9 +115,9 @@ inline DiscordRichPresence CreatePresence(
                     Full2Half(rawEventText);
                 }
 
-                wcstombs_s(nullptr, largeImageText, rawEventText, EventTextLength - 1);
+                wcstombs_s(nullptr, Activity.assets.large_text, rawEventText, MaxImageTextLength - 1);
             }
-            else if (const auto rawEventExtText = Program.value().pszEventExtText; rawEventExtText != nullptr && !IsBlank(rawEventExtText, EventTextExtLength))
+            else if (const auto rawEventExtText = Program.value().pszEventExtText; rawEventExtText != nullptr && !IsBlank(rawEventExtText, MaxImageTextLength))
             {
                 // 半角変換
                 if (Config.ConvertToHalfWidth)
@@ -135,40 +125,21 @@ inline DiscordRichPresence CreatePresence(
                     Full2Half(rawEventExtText);
                 }
 
-                wcstombs_s(nullptr, largeImageText, rawEventExtText, EventTextExtLength - 1);
+                wcstombs_s(nullptr, Activity.assets.large_text, rawEventExtText, MaxImageTextLength - 1);
             }
         }
     }
 
     // バージョン情報を付与する
     {
-        strcpy_s(smallImageKey, LOGO_DEFAULT);
+        strcpy_s(Activity.assets.small_image, LOGO_DEFAULT);
 
         if (Host.has_value()) {
-            sprintf_s(smallImageText, "%ws v%ws / TvTestRPC v%s", Host.value().pszAppName, Host.value().pszVersionText, TvTestRPCVersion);
+            sprintf_s(Activity.assets.small_text, "%ws v%ws / TvTestRPC v%s", Host.value().pszAppName, Host.value().pszVersionText, TvTestRPCVersion);
         }
     }
     
-    DiscordRichPresence Presence;
-    memset(&Presence, 0, sizeof Presence);
-    Presence.details = details;
-    Presence.state = state;
-    Presence.startTimestamp = startTimestamp;
-    Presence.endTimestamp = endTimestamp;
-    Presence.largeImageKey = largeImageKey;
-    Presence.largeImageText = largeImageText;
-    Presence.smallImageKey = smallImageKey;
-    Presence.smallImageText = smallImageText;
-
-    Presence.partyId = "";
-	Presence.partySize = 0;
-	Presence.partyMax = 0;
-	Presence.matchSecret = "";
-	Presence.joinSecret = "";
-	Presence.spectateSecret = "";
-	Presence.instance = 0;
-
-    return Presence;
+    return Activity;
 }
 
 enum class PresenceEquality
@@ -176,10 +147,10 @@ enum class PresenceEquality
     Same, DifferentTimestamp, Different
 };
 
-inline PresenceEquality CheckEquality(const DiscordRichPresence one, const DiscordRichPresence other)
+inline PresenceEquality CheckEquality(const DiscordActivity one, const DiscordActivity other)
 {
     // 番組の開始時刻が違う
-    if (one.startTimestamp != other.startTimestamp)
+    if (one.timestamps.start != other.timestamps.start)
     {
         return PresenceEquality::DifferentTimestamp;
     }
@@ -196,8 +167,14 @@ inline PresenceEquality CheckEquality(const DiscordRichPresence one, const Disco
         return PresenceEquality::Different;
     }
 
+    // 番組説明が違う
+    if (one.assets.large_text != other.assets.large_text)
+    {
+        return PresenceEquality::Different;
+    }
+
     // ロゴが違う
-    if (one.largeImageKey != other.largeImageKey)
+    if (one.assets.large_image != other.assets.large_image)
     {
         return PresenceEquality::Different;
     }

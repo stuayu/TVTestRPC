@@ -1,16 +1,20 @@
 ﻿#include "stdafx.h"
 
 #include "Config.h"
-#include "Presence.h"
+#include "Activity.h"
 
 constexpr auto TvTestRPCWindowClass = L"TvTestRPC Window";
-constexpr auto TvTestRPCTimerId = 1;
-constexpr auto TvTestRPCTimerIntervalMs = 3000;
+constexpr auto UpdateActivityTimerId = WM_APP + 1;
+constexpr auto UpdateActivityTimerIntervalMs = 3000;
+constexpr auto RunCallbacksTimerId = WM_APP + 2;
+constexpr auto RunCallbacksTimerIntervalMs = 100;
 
 class CTvTestRPCPlugin final : public TVTest::CTVTestPlugin
 {
-    DiscordEventHandlers m_handlers{};
-    DiscordRichPresence m_lastPresence{};
+    IDiscordCore* m_discord{};
+    IDiscordActivityManager* m_activities{};
+    DiscordActivity m_lastActivity{};
+
     wchar_t m_iniFileName[MAX_PATH]{};
     HWND m_hwnd{};
     std::mutex m_mutex;
@@ -20,8 +24,8 @@ class CTvTestRPCPlugin final : public TVTest::CTVTestPlugin
 
     void LoadConfig();
 
-    void StartDiscordRPC();
-    void UpdatePresence();
+    void InitializeDiscord();
+    void UpdateActivity();
 
     static LRESULT CALLBACK EventCallback(UINT Event, LPARAM lParam1, LPARAM lParam2, void* pClientData);
     static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -93,8 +97,14 @@ public:
      */
     bool Finalize() override
     {
+        // Discord クライアントの破棄
+        if (m_isReady)
+        {
+            m_discord->destroy(m_discord);
+        }
+
         // タイマー・ウィンドウの破棄
-        ::KillTimer(m_hwnd, TvTestRPCTimerId);
+        ::KillTimer(m_hwnd, UpdateActivityTimerId);
         ::DestroyWindow(m_hwnd);
 
         return true;
@@ -135,17 +145,35 @@ void CTvTestRPCPlugin::LoadConfig()
 }
 
 /*
- * Discord RPC クライアントを初期化する
+ * Discord クライアントを初期化する
  */
-void CTvTestRPCPlugin::StartDiscordRPC()
+void CTvTestRPCPlugin::InitializeDiscord()
 {
-    Discord_Initialize("844540020286685184", &m_handlers, 1, nullptr);
+    if (m_isReady)
+    {
+        m_discord->destroy(m_discord);
+    }
+
+    DiscordCreateParams params{};
+    DiscordCreateParamsSetDefault(&params);
+    params.client_id = 844540020286685184;
+    params.flags = DiscordCreateFlags_Default;
+
+    if (DiscordCreate(DISCORD_VERSION, &params, &m_discord) == DiscordResult_Ok)
+    {
+        m_activities = m_discord->get_activity_manager(m_discord);
+        m_isReady = true;
+    }
+    else
+    {
+        m_isReady = false;
+    }
 }
 
 /*
  * Discord Rich Presence を更新する
  */
-void CTvTestRPCPlugin::UpdatePresence()
+void CTvTestRPCPlugin::UpdateActivity()
 {
     if (!m_isReady)
     {
@@ -185,13 +213,13 @@ void CTvTestRPCPlugin::UpdatePresence()
 
         // Program
         TVTest::ProgramInfo Program{};
-        wchar_t pszEventName[EventNameLength];
+        wchar_t pszEventName[MaxStateLength];
         Program.pszEventName = pszEventName;
         Program.MaxEventName = _countof(pszEventName);
-        wchar_t pszEventText[EventTextLength];
+        wchar_t pszEventText[MaxImageTextLength];
         Program.pszEventText = pszEventText;
         Program.MaxEventText = _countof(pszEventText);
-        wchar_t pszEventExtText[EventTextExtLength];
+        wchar_t pszEventExtText[MaxImageTextLength];
         Program.pszEventExtText = pszEventExtText;
         Program.MaxEventExtText = _countof(pszEventExtText);
         const auto program = m_pApp->GetCurrentProgramInfo(&Program) ? std::optional(Program) : std::nullopt;
@@ -200,17 +228,17 @@ void CTvTestRPCPlugin::UpdatePresence()
         TVTest::HostInfo Host{};
         const auto host = m_pApp->GetHostInfo(&Host) ? std::optional(Host) : std::nullopt;
 
-        auto presence = CreatePresence(tuningSpace, service, program, host, m_config);
+        auto activity = CreatePresence(tuningSpace, service, program, host, m_config);
 
         // 同じ Presence であれば無視
-        auto const result = CheckEquality(presence, m_lastPresence);
+        auto const result = CheckEquality(activity, m_lastActivity);
         if (result == PresenceEquality::Same)
         {
             return;
         }
 
-        Discord_UpdatePresence(&presence);
-        m_lastPresence = presence;
+        m_activities->update_activity(m_activities, &activity, nullptr, nullptr);
+        m_lastActivity = activity;
 
         // ログ
         // タイムスタンプ違いのときは出力しない
@@ -220,7 +248,7 @@ void CTvTestRPCPlugin::UpdatePresence()
         }
 
         const auto serviceName = service.has_value() && !IsBlank(service.value().szServiceName, ServiceNameLength) ? service.value().szServiceName : L"[不明]";
-        const auto eventName = program.has_value() && !IsBlank(program.value().pszEventName, EventNameLength) ? program.value().pszEventName : L"[不明]";
+        const auto eventName = program.has_value() && !IsBlank(program.value().pszEventName, MaxStateLength) ? program.value().pszEventName : L"[不明]";
         wchar_t buf[256];
         wsprintf(buf, L"Rich Presence を更新しました。(サービス名: %s, 番組名: %s)", serviceName, eventName);
         m_pApp->AddLog(buf);
@@ -241,19 +269,17 @@ LRESULT CALLBACK CTvTestRPCPlugin::EventCallback(const UINT Event, const LPARAM 
         {
             pThis->LoadConfig();
 
-            pThis->StartDiscordRPC();
-            pThis->m_isReady = true;
-
-            pThis->UpdatePresence();
+            pThis->InitializeDiscord();
+            pThis->UpdateActivity();
         }
-        else
+        else if (pThis->m_isReady)
         {
-            pThis->m_isReady = false;
-            pThis->m_lastPresence = {};
+            pThis->m_lastActivity = {};
+            pThis->m_activities->clear_activity(pThis->m_activities, nullptr, nullptr);
 
-            Discord_ClearPresence();
-            // Discord RPC クライアントの破棄
-            Discord_Shutdown();
+            pThis->m_discord->destroy(pThis->m_discord);
+
+            pThis->m_isReady = false;
         }
 
         return true;
@@ -261,7 +287,7 @@ LRESULT CALLBACK CTvTestRPCPlugin::EventCallback(const UINT Event, const LPARAM 
     case TVTest::EVENT_CHANNELCHANGE:
     case TVTest::EVENT_SERVICECHANGE:
     case TVTest::EVENT_SERVICEUPDATE:
-        pThis->UpdatePresence();
+        pThis->UpdateActivity();
 
         return true;
 
@@ -284,17 +310,25 @@ LRESULT CALLBACK CTvTestRPCPlugin::WndProc(const HWND hWnd, const UINT uMsg, con
             auto* pThis = static_cast<CTvTestRPCPlugin*>(pcs->lpCreateParams);
 
             ::SetWindowLongPtr(hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(pThis));
-            ::SetTimer(hWnd, TvTestRPCTimerId, TvTestRPCTimerIntervalMs, nullptr);
+            SetTimer(hWnd, UpdateActivityTimerId, UpdateActivityTimerIntervalMs, nullptr);
+            SetTimer(hWnd, RunCallbacksTimerId, RunCallbacksTimerIntervalMs, nullptr);
         }
 
         return true;
 
     case WM_TIMER:
-        if (wParam == TvTestRPCTimerId)
+        if (wParam == UpdateActivityTimerId)
         {
             auto* pThis = reinterpret_cast<CTvTestRPCPlugin*>(::GetWindowLongPtr(hWnd, GWLP_USERDATA));
 
-            pThis->UpdatePresence();
+            pThis->UpdateActivity();
+        }
+        else if (wParam == RunCallbacksTimerId)
+        {
+            if (auto * pThis = reinterpret_cast<CTvTestRPCPlugin*>(::GetWindowLongPtr(hWnd, GWLP_USERDATA)); pThis->m_isReady)
+            {
+                pThis->m_discord->run_callbacks(pThis->m_discord);
+            }
         }
 
         return false;

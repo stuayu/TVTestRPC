@@ -24,7 +24,7 @@
     <ClInclude Include="Logo.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Presence.h">
+    <ClInclude Include="Activity.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="Version.h">
