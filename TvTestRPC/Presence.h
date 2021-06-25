@@ -22,10 +22,7 @@ inline DiscordRichPresence CreatePresence(
     const std::optional<const TVTest::ServiceInfo> Service,
     const std::optional<const TVTest::ProgramInfo> Program,
     const std::optional<const TVTest::HostInfo> Host,
-    const bool ShowEndTime,
-    const bool ShowChannelLogo,
-    const bool ConvertToHalfWidth,
-    std::map<WORD, std::string>& Logos
+    Config& Config
 )
 {
     // ロケールの設定
@@ -53,7 +50,7 @@ inline DiscordRichPresence CreatePresence(
             const auto pos = GetTvtPlayPositionSec(tvtPlayHwnd);
 
             startTimestamp = now + pos;
-            if (ShowEndTime && duration > 0)
+            if (Config.ShowEndTime && duration > 0)
             {
                 endTimestamp = now + (duration - pos);
             }
@@ -63,7 +60,7 @@ inline DiscordRichPresence CreatePresence(
             const auto rawStartTime = Program.value().StartTime;
 
             startTimestamp = SystemTime2Timet(rawStartTime);
-            if (ShowEndTime && duration > 0)
+            if (Config.ShowEndTime && duration > 0)
             {
                 endTimestamp = startTimestamp + duration;
             }
@@ -80,7 +77,7 @@ inline DiscordRichPresence CreatePresence(
         wcsncpy_s(serviceName, !IsBlank(rawServiceName, ServiceNameLength) ? rawServiceName : L"取得中…", ServiceNameLength);
 
         // 半角変換
-        if (ConvertToHalfWidth)
+        if (Config.ConvertToHalfWidth)
         {
             Full2Half(serviceName);
         }
@@ -94,7 +91,7 @@ inline DiscordRichPresence CreatePresence(
         if (const auto rawEventName = Program.value().pszEventName; !IsBlank(rawEventName, EventNameLength))
         {
             // 半角変換
-            if (ConvertToHalfWidth)
+            if (Config.ConvertToHalfWidth)
             {
                 Full2Half(rawEventName);
             }
@@ -104,7 +101,7 @@ inline DiscordRichPresence CreatePresence(
     }
 
     // チャンネルロゴ or TVTest ロゴを付与する
-    if (ShowChannelLogo)
+    if (Config.ShowChannelLogo)
     {
         WORD serviceId = 0;
         wchar_t serviceName[ServiceNameLength]{};
@@ -114,7 +111,7 @@ inline DiscordRichPresence CreatePresence(
             wcscpy_s(serviceName, Service.value().szServiceName);
         }
 
-        const auto logoKey = Logos.count(serviceId) > 0 ? Logos[serviceId].c_str() : GetServiceLogoKey(TuningSpace, serviceId, serviceName);
+        const auto logoKey = Config.Logos.count(serviceId) > 0 ? Config.Logos[serviceId].c_str() : GetServiceLogoKey(TuningSpace, serviceId, serviceName);
         strcpy_s(largeImageKey, logoKey);
 
         // 番組データがあるなら番組説明を付与する
@@ -123,7 +120,7 @@ inline DiscordRichPresence CreatePresence(
             if (const auto rawEventText = Program.value().pszEventText; rawEventText != nullptr && !IsBlank(rawEventText, EventTextLength))
             {
                 // 半角変換
-                if (ConvertToHalfWidth)
+                if (Config.ConvertToHalfWidth)
                 {
                     Full2Half(rawEventText);
                 }
@@ -133,7 +130,7 @@ inline DiscordRichPresence CreatePresence(
             else if (const auto rawEventExtText = Program.value().pszEventExtText; rawEventExtText != nullptr && !IsBlank(rawEventExtText, EventTextExtLength))
             {
                 // 半角変換
-                if (ConvertToHalfWidth)
+                if (Config.ConvertToHalfWidth)
                 {
                     Full2Half(rawEventExtText);
                 }

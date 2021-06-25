@@ -1,5 +1,6 @@
 ﻿#include "stdafx.h"
 
+#include "Config.h"
 #include "Presence.h"
 
 constexpr auto TvTestRPCWindowClass = L"TvTestRPC Window";
@@ -15,14 +16,9 @@ class CTvTestRPCPlugin final : public TVTest::CTVTestPlugin
     std::mutex m_mutex;
     bool m_isReady = false;
 
-    bool m_showEndTime = true;
-    bool m_showChannelLogo = true;
-    bool m_convertToHalfWidth = true;
-    bool m_ignoreTuningSpace = false;
-    std::map<WORD, std::string> m_logos;
+    Config m_config{};
 
     void LoadConfig();
-    void SaveConfig() const;
 
     void StartDiscordRPC();
     void UpdatePresence();
@@ -97,9 +93,6 @@ public:
      */
     bool Finalize() override
     {
-        // 設定を保存
-        SaveConfig();
-
         // タイマー・ウィンドウの破棄
         ::KillTimer(m_hwnd, TvTestRPCTimerId);
         ::DestroyWindow(m_hwnd);
@@ -125,10 +118,10 @@ void CTvTestRPCPlugin::LoadConfig()
     ::PathRenameExtension(m_iniFileName, L".ini");
 
     const auto settings = GetPrivateProfileSectionBuffer(L"Settings", m_iniFileName);
-    m_showEndTime = GetBufferedProfileInt(settings.data(), L"ShowEndTime", m_showEndTime) > 0;
-    m_showChannelLogo = GetBufferedProfileInt(settings.data(), L"ShowChannelLogo", m_showChannelLogo) > 0;
-    m_convertToHalfWidth = GetBufferedProfileInt(settings.data(), L"ConvertToHalfWidth", m_convertToHalfWidth) > 0;
-    m_ignoreTuningSpace = GetBufferedProfileInt(settings.data(), L"IgnoreTuningSpace", m_ignoreTuningSpace) > 0;
+    m_config.ShowEndTime = GetBufferedProfileInt(settings.data(), L"ShowEndTime", m_config.ShowEndTime) > 0;
+    m_config.ShowChannelLogo = GetBufferedProfileInt(settings.data(), L"ShowChannelLogo", m_config.ShowChannelLogo) > 0;
+    m_config.ConvertToHalfWidth = GetBufferedProfileInt(settings.data(), L"ConvertToHalfWidth", m_config.ConvertToHalfWidth) > 0;
+    m_config.IgnoreTuningSpace = GetBufferedProfileInt(settings.data(), L"IgnoreTuningSpace", m_config.IgnoreTuningSpace) > 0;
 
     const auto logos = GetPrivateProfileSectionBuffer(L"Logos", m_iniFileName);
     for (auto p = logos.data(); *p; p += wcslen(p) + 1) {
@@ -136,25 +129,9 @@ void CTvTestRPCPlugin::LoadConfig()
 
         if (char logoKey[MaxImageKeyLength]; swscanf_s(p, L"%hd=%S", &serviceId, logoKey, MaxImageKeyLength) == 2)
 		{
-            m_logos[serviceId] = logoKey;
+            m_config.Logos[serviceId] = logoKey;
 		}
 	}
-}
-
-/*
- * 設定を保存する
- */
-void CTvTestRPCPlugin::SaveConfig() const
-{
-    if (!m_isReady)
-    {
-        return;
-    }
-
-    WritePrivateProfileInt(L"Settings", L"ShowEndTime", m_showEndTime, m_iniFileName);
-    WritePrivateProfileInt(L"Settings", L"ShowChannelLogo", m_showChannelLogo, m_iniFileName);
-    WritePrivateProfileInt(L"Settings", L"ConvertToHalfWidth", m_convertToHalfWidth, m_iniFileName);
-    WritePrivateProfileInt(L"Settings", L"IgnoreTuningSpace", m_ignoreTuningSpace, m_iniFileName);
 }
 
 /*
@@ -182,7 +159,7 @@ void CTvTestRPCPlugin::UpdatePresence()
         // TuningSpace
         std::optional<TuningSpace> tuningSpace = std::nullopt;
         TVTest::TuningSpaceInfo TuningSpace{};
-        if (!m_ignoreTuningSpace && m_pApp->GetTuningSpaceInfo(m_pApp->GetTuningSpace(), &TuningSpace))
+        if (!m_config.IgnoreTuningSpace && m_pApp->GetTuningSpaceInfo(m_pApp->GetTuningSpace(), &TuningSpace))
         {
             tuningSpace = GetTuningSpaceByName(TuningSpace.szName);
             if (!tuningSpace.has_value())
@@ -223,7 +200,7 @@ void CTvTestRPCPlugin::UpdatePresence()
         TVTest::HostInfo Host{};
         const auto host = m_pApp->GetHostInfo(&Host) ? std::optional(Host) : std::nullopt;
 
-        auto presence = CreatePresence(tuningSpace, service, program, host, m_showEndTime, m_showChannelLogo, m_convertToHalfWidth, m_logos);
+        auto presence = CreatePresence(tuningSpace, service, program, host, m_config);
 
         // 同じ Presence であれば無視
         auto const result = CheckEquality(presence, m_lastPresence);

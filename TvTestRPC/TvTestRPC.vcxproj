@@ -188,6 +188,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Config.h" />
     <ClInclude Include="Logo.h" />
     <ClInclude Include="Presence.h" />
     <ClInclude Include="stdafx.h" />
