@@ -24,6 +24,18 @@ jobs:
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v1
 
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v7
+        with:
+          setupOnly: true
+          vcpkgGitCommitId: 5568f110b509a9fd90711978a7cb76bae75bb092
+          vcpkgTriplet: ${{ matrix.platform }}-windows
+          appendedCacheKey: ${{ hashFiles( '**/vcpkg.json' ) }}
+
+      - name: Install MSBuild integration
+        shell: powershell
+        run: vcpkg integrate install
+
       - name: MSBuild
         run: msbuild TvTestRPC.sln -property:Configuration="Release" -property:Platform="${{ matrix.platform }}" -m
 
