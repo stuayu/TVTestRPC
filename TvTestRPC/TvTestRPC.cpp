@@ -229,29 +229,16 @@ void CTvTestRPCPlugin::UpdateActivity()
         const auto host = m_pApp->GetHostInfo(&Host) ? std::optional(Host) : std::nullopt;
 
         auto activity = CreatePresence(tuningSpace, service, program, host, m_config);
-
-        // 同じ Presence であれば無視
-        auto const result = CheckEquality(activity, m_lastActivity);
-        if (result == PresenceEquality::Same)
-        {
-            return;
-        }
-
         m_activities->update_activity(m_activities, &activity, nullptr, nullptr);
         m_lastActivity = activity;
 
-        // ログ
-        // タイムスタンプ違いのときは出力しない
-        if (result == PresenceEquality::DifferentTimestamp)
-        {
-            return;
-        }
-
+#ifdef _DEBUG
         const auto serviceName = service.has_value() && !IsBlank(service.value().szServiceName, ServiceNameLength) ? service.value().szServiceName : L"[不明]";
         const auto eventName = program.has_value() && !IsBlank(program.value().pszEventName, MaxStateLength) ? program.value().pszEventName : L"[不明]";
         wchar_t buf[256];
         wsprintf(buf, L"Rich Presence を更新しました。(サービス名: %s, 番組名: %s)", serviceName, eventName);
-        m_pApp->AddLog(buf);
+        OutputDebugString(buf);
+#endif
     }
 }
 

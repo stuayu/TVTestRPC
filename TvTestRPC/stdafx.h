@@ -4,17 +4,17 @@
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 
-#include <cstdlib>
-#include <cstdint>
-#include <ctime>
 #include <clocale>
 #include <combaseapi.h>
-#include <tchar.h>
-#include <string>
-#include <optional>
-#include <mutex>
-#include <vector>
+#include <cstdint>
+#include <cstdlib>
+#include <ctime>
 #include <map>
+#include <mutex>
+#include <optional>
+#include <string>
+#include <tchar.h>
+#include <vector>
 
 #include <Shlwapi.h>
 #pragma comment(lib, "shlwapi.lib")

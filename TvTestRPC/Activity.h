@@ -14,11 +14,11 @@ constexpr auto MaxImageTextLength = 128;
 
 constexpr auto ServiceNameLength = 32;
 
-inline DiscordActivity CreatePresence(
-    const std::optional<const TuningSpace> TuningSpace,
-    const std::optional<const TVTest::ServiceInfo> Service,
-    const std::optional<const TVTest::ProgramInfo> Program,
-    const std::optional<const TVTest::HostInfo> Host,
+static DiscordActivity CreatePresence(
+    const std::optional<TuningSpace> TuningSpace,
+    const std::optional<TVTest::ServiceInfo> Service,
+    const std::optional<TVTest::ProgramInfo> Program,
+    const std::optional<TVTest::HostInfo> Host,
     Config& Config
 )
 {
@@ -140,44 +140,4 @@ inline DiscordActivity CreatePresence(
     }
     
     return Activity;
-}
-
-enum class PresenceEquality
-{
-    Same, DifferentTimestamp, Different
-};
-
-inline PresenceEquality CheckEquality(const DiscordActivity one, const DiscordActivity other)
-{
-    // 番組の開始時刻が違う
-    if (one.timestamps.start != other.timestamps.start)
-    {
-        return PresenceEquality::DifferentTimestamp;
-    }
-
-    // サービス名が違う
-    if (one.details != other.details)
-    {
-        return PresenceEquality::Different;
-    }
-
-    // 番組名が違う
-    if (one.state != other.state)
-    {
-        return PresenceEquality::Different;
-    }
-
-    // 番組説明が違う
-    if (one.assets.large_text != other.assets.large_text)
-    {
-        return PresenceEquality::Different;
-    }
-
-    // ロゴが違う
-    if (one.assets.large_image != other.assets.large_image)
-    {
-        return PresenceEquality::Different;
-    }
-
-    return PresenceEquality::Same;
 }
