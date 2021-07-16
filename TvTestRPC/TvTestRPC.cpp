@@ -211,6 +211,10 @@ void CTvTestRPCPlugin::UpdateActivity()
             }
         }
 
+        // ChannelInfo
+        TVTest::ChannelInfo Channel{};
+        const auto channel = m_pApp->GetCurrentChannelInfo(&Channel) ? std::optional(Channel) : std::nullopt;
+
         // Program
         TVTest::ProgramInfo Program{};
         wchar_t pszEventName[MaxStateLength];
@@ -228,7 +232,7 @@ void CTvTestRPCPlugin::UpdateActivity()
         TVTest::HostInfo Host{};
         const auto host = m_pApp->GetHostInfo(&Host) ? std::optional(Host) : std::nullopt;
 
-        auto activity = CreatePresence(tuningSpace, service, program, host, m_config);
+        auto activity = CreatePresence(tuningSpace, service, channel, program, host, m_config);
         m_activities->update_activity(m_activities, &activity, nullptr, nullptr);
         m_lastActivity = activity;
 

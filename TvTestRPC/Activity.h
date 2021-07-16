@@ -13,10 +13,12 @@ constexpr auto MaxImageKeyLength = 128;
 constexpr auto MaxImageTextLength = 128;
 
 constexpr auto ServiceNameLength = 32;
+constexpr auto ChannelNameLength = 64;
 
 static DiscordActivity CreatePresence(
     const std::optional<TuningSpace> TuningSpace,
     const std::optional<TVTest::ServiceInfo> Service,
+    const std::optional<TVTest::ChannelInfo> Channel,
     const std::optional<TVTest::ProgramInfo> Program,
     const std::optional<TVTest::HostInfo> Host,
     Config& Config
@@ -63,16 +65,33 @@ static DiscordActivity CreatePresence(
         // const wchar_t* → wchar_t*
         // const auto rawServiceName = const_cast<LPWSTR>(Service.value().szServiceName);
         wchar_t serviceName[ServiceNameLength] = {};
-        const auto rawServiceName = Service.value().szServiceName;
-        wcsncpy_s(serviceName, !IsBlank(rawServiceName, ServiceNameLength) ? rawServiceName : L"取得中…", ServiceNameLength);
+
+        if (const auto rawServiceName = Service.value().szServiceName; !IsBlank(rawServiceName, ServiceNameLength))
+        {
+            wcsncpy_s(serviceName, rawServiceName, ServiceNameLength);
+
+            // 半角変換
+            if (Config.ConvertToHalfWidth)
+            {
+                Full2Half(serviceName);
+            }
+
+            wcstombs_s(nullptr, Activity.details, serviceName, ServiceNameLength - 1);
+        }
+    }
+    if (Channel.has_value() && strlen(Activity.details) == 0)
+    {
+        wchar_t channelName[ChannelNameLength] = {};
+        const auto rawChannelName = Channel.value().szChannelName;
+        wcsncpy_s(channelName, !IsBlank(rawChannelName, ChannelNameLength) ? rawChannelName : L"取得中…", ChannelNameLength);
 
         // 半角変換
         if (Config.ConvertToHalfWidth)
         {
-            Full2Half(serviceName);
+            Full2Half(channelName);
         }
 
-        wcstombs_s(nullptr, Activity.details, serviceName, ServiceNameLength - 1);
+        wcstombs_s(nullptr, Activity.details, channelName, ChannelNameLength - 1);
     }
 
     // 番組データがあるなら番組名を付与する
@@ -99,6 +118,10 @@ static DiscordActivity CreatePresence(
         {
             serviceId = Service.value().ServiceID;
             wcscpy_s(serviceName, Service.value().szServiceName);
+        }
+        else if (Channel.has_value())
+        {
+            wcscpy_s(serviceName, Channel.value().szChannelName);
         }
 
         const auto logoKey = Config.Logos.count(serviceId) > 0 ? Config.Logos[serviceId].c_str() : GetServiceLogoKey(TuningSpace, serviceId, serviceName);
