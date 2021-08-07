@@ -204,6 +204,9 @@ inline const char* GetGRServiceLogoKey(const WORD serviceId, const wchar_t* serv
     case 43056: // 兵庫: サンテレビ
         return "gr_43056";
 
+    case 46128: // 滋賀: BBC びわ湖放送
+        return "gr_46128";
+
     case 47528: // 広島: テレビ新広島
         return "gr_47528";
 
