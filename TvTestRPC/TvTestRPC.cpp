@@ -157,16 +157,20 @@ void CTvTestRPCPlugin::InitializeDiscord()
     DiscordCreateParams params{};
     DiscordCreateParamsSetDefault(&params);
     params.client_id = 844540020286685184;
-    params.flags = DiscordCreateFlags_Default;
+    params.flags = DiscordCreateFlags_NoRequireDiscord;
 
     if (DiscordCreate(DISCORD_VERSION, &params, &m_discord) == DiscordResult_Ok)
     {
         m_activities = m_discord->get_activity_manager(m_discord);
         m_isReady = true;
+
+        m_pApp->AddLog(L"Discord との接続に成功しました。");
     }
     else
     {
         m_isReady = false;
+
+        m_pApp->AddLog(L"Discord との接続に失敗しました。Discord が起動していない可能性があります。");
     }
 }
 
