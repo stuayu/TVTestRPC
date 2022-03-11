@@ -300,6 +300,15 @@ inline const char* GetBSServiceLogoKey(const WORD serviceId)
         // ディズニーch
     case 256:
         return "bs_256";
+        // BS松竹東急
+    case 260:
+        return "bs_260";
+        // BSJapanext
+    case 263:
+        return "bs_263";
+        // BSよしもと
+    case 265:
+        return "bs_265";
     default:
         return LOGO_DEFAULT;
     }
