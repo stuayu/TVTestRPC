@@ -59,42 +59,45 @@ static DiscordActivity CreatePresence(
         }
     }
 
-    // サービスデータがあるならサービス名を付与する
-    if (Service.has_value())
-    {
-        // const wchar_t* → wchar_t*
-        // const auto rawServiceName = const_cast<LPWSTR>(Service.value().szServiceName);
-        wchar_t serviceName[ServiceNameLength] = {};
-
-        if (const auto rawServiceName = Service.value().szServiceName; !IsBlank(rawServiceName, ServiceNameLength))
+    // サービス名を assets.large_text に設定
+    if (Config.ShowChannelLogo) {
+        if (Service.has_value())
         {
-            wcsncpy_s(serviceName, rawServiceName, ServiceNameLength);
+            // const wchar_t* → wchar_t*
+            // const auto rawServiceName = const_cast<LPWSTR>(Service.value().szServiceName);
+            wchar_t serviceName[ServiceNameLength] = {};
+
+            if (const auto rawServiceName = Service.value().szServiceName; !IsBlank(rawServiceName, ServiceNameLength))
+            {
+                wcsncpy_s(serviceName, rawServiceName, ServiceNameLength);
+
+                // 半角変換
+                if (Config.ConvertToHalfWidth)
+                {
+                    Full2Half(serviceName);
+                }
+
+                wcstombs_s(nullptr, Activity.assets.large_text, serviceName, ServiceNameLength - 1);
+            }
+        }
+
+        if (Channel.has_value() && strlen(Activity.assets.large_text) == 0)
+        {
+            wchar_t channelName[ChannelNameLength] = {};
+            const auto rawChannelName = Channel.value().szChannelName;
+            wcsncpy_s(channelName, !IsBlank(rawChannelName, ChannelNameLength) ? rawChannelName : L"取得中…", ChannelNameLength);
 
             // 半角変換
             if (Config.ConvertToHalfWidth)
             {
-                Full2Half(serviceName);
+                Full2Half(channelName);
             }
 
-            wcstombs_s(nullptr, Activity.details, serviceName, ServiceNameLength - 1);
+            wcstombs_s(nullptr, Activity.assets.large_text, channelName, ChannelNameLength - 1);
         }
     }
-    if (Channel.has_value() && strlen(Activity.details) == 0)
-    {
-        wchar_t channelName[ChannelNameLength] = {};
-        const auto rawChannelName = Channel.value().szChannelName;
-        wcsncpy_s(channelName, !IsBlank(rawChannelName, ChannelNameLength) ? rawChannelName : L"取得中…", ChannelNameLength);
 
-        // 半角変換
-        if (Config.ConvertToHalfWidth)
-        {
-            Full2Half(channelName);
-        }
-
-        wcstombs_s(nullptr, Activity.details, channelName, ChannelNameLength - 1);
-    }
-
-    // 番組データがあるなら番組名を付与する
+    // 番組名を details に設定
     if (Program.has_value())
     {
         if (const auto rawEventName = Program.value().pszEventName; !IsBlank(rawEventName, MaxStateLength))
@@ -105,7 +108,32 @@ static DiscordActivity CreatePresence(
                 Full2Half(rawEventName);
             }
 
-            wcstombs_s(nullptr, Activity.state, rawEventName, MaxStateLength - 1);
+            wcstombs_s(nullptr, Activity.details, rawEventName, MaxStateLength - 1);
+        }
+    }
+
+    // 番組説明を state に設定
+    if (Program.has_value())
+    {
+        if (const auto rawEventText = Program.value().pszEventText; rawEventText != nullptr && !IsBlank(rawEventText, MaxImageTextLength))
+        {
+            // 半角変換
+            if (Config.ConvertToHalfWidth)
+            {
+                Full2Half(rawEventText);
+            }
+
+            wcstombs_s(nullptr, Activity.state, rawEventText, MaxImageTextLength - 1);
+        }
+        else if (const auto rawEventExtText = Program.value().pszEventExtText; rawEventExtText != nullptr && !IsBlank(rawEventExtText, MaxImageTextLength))
+        {
+            // 半角変換
+            if (Config.ConvertToHalfWidth)
+            {
+                Full2Half(rawEventExtText);
+            }
+
+            wcstombs_s(nullptr, Activity.state, rawEventExtText, MaxImageTextLength - 1);
         }
     }
 
@@ -126,31 +154,6 @@ static DiscordActivity CreatePresence(
 
         const auto logoKey = Config.Logos.count(serviceId) > 0 ? Config.Logos[serviceId].c_str() : GetServiceLogoKey(TuningSpace, serviceId, serviceName);
         strcpy_s(Activity.assets.large_image, logoKey);
-
-        // 番組データがあるなら番組説明を付与する
-        if (Program.has_value())
-        {
-            if (const auto rawEventText = Program.value().pszEventText; rawEventText != nullptr && !IsBlank(rawEventText, MaxImageTextLength))
-            {
-                // 半角変換
-                if (Config.ConvertToHalfWidth)
-                {
-                    Full2Half(rawEventText);
-                }
-
-                wcstombs_s(nullptr, Activity.assets.large_text, rawEventText, MaxImageTextLength - 1);
-            }
-            else if (const auto rawEventExtText = Program.value().pszEventExtText; rawEventExtText != nullptr && !IsBlank(rawEventExtText, MaxImageTextLength))
-            {
-                // 半角変換
-                if (Config.ConvertToHalfWidth)
-                {
-                    Full2Half(rawEventExtText);
-                }
-
-                wcstombs_s(nullptr, Activity.assets.large_text, rawEventExtText, MaxImageTextLength - 1);
-            }
-        }
     }
 
     // バージョン情報を付与する

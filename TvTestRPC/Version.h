@@ -1,3 +1,3 @@
 #pragma once
 
-constexpr auto TvTestRPCVersion = "2.4.1";
+constexpr auto TvTestRPCVersion = "2.5.0";
