@@ -5,7 +5,7 @@
 
 TVTest で Discord Rich Presence を使えるようにするプラグインです。(TVTest ver.0.6.0 or later)
 
-[![screenshot.png](https://raw.githubusercontent.com/SlashNephy/TvTestRPC/dev/docs/screenshot.png)](https://github.com/SlashNephy/TvTestRPC)
+![image](https://user-images.githubusercontent.com/7302150/175781038-7905b66d-4067-49f6-ad96-b4bccdad94ea.png)
 
 ## Get Started
 
