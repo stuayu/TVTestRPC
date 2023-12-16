@@ -21,8 +21,7 @@ static DiscordActivity CreatePresence(
     const std::optional<TVTest::ChannelInfo> Channel,
     const std::optional<TVTest::ProgramInfo> Program,
     const std::optional<TVTest::HostInfo> Host,
-    Config& Config
-)
+    Config &Config)
 {
     // ロケールの設定
     setlocale(LC_ALL, ".utf8");
@@ -60,7 +59,8 @@ static DiscordActivity CreatePresence(
     }
 
     // サービス名を assets.large_text に設定
-    if (Config.ShowChannelLogo) {
+    if (Config.ShowChannelLogo)
+    {
         if (Service.has_value())
         {
             // const wchar_t* → wchar_t*
@@ -77,11 +77,19 @@ static DiscordActivity CreatePresence(
                     Full2Half(serviceName);
                 }
 
-                wcstombs_s(nullptr, Activity.assets.large_text, serviceName, ServiceNameLength - 1);
+                // 表示位置を切り替え
+                if (Config.SetChannelNameOnDetails)
+                {
+                    wcstombs_s(nullptr, Activity.details, serviceName, ServiceNameLength - 1);
+                }
+                else
+                {
+                    wcstombs_s(nullptr, Activity.assets.large_text, serviceName, ServiceNameLength - 1);
+                }
             }
         }
 
-        if (Channel.has_value() && strlen(Activity.assets.large_text) == 0)
+        if (Channel.has_value() && (strlen(Activity.assets.large_text) == 0 && strlen(Activity.details) == 0))
         {
             wchar_t channelName[ChannelNameLength] = {};
             const auto rawChannelName = Channel.value().szChannelName;
@@ -93,7 +101,15 @@ static DiscordActivity CreatePresence(
                 Full2Half(channelName);
             }
 
-            wcstombs_s(nullptr, Activity.assets.large_text, channelName, ChannelNameLength - 1);
+            // 表示位置を切り替え
+            if (Config.SetChannelNameOnDetails)
+            {
+                wcstombs_s(nullptr, Activity.details, channelName, ChannelNameLength - 1);
+            }
+            else
+            {
+                wcstombs_s(nullptr, Activity.assets.large_text, channelName, ChannelNameLength - 1);
+            }
         }
     }
 
@@ -108,7 +124,15 @@ static DiscordActivity CreatePresence(
                 Full2Half(rawEventName);
             }
 
-            wcstombs_s(nullptr, Activity.details, rawEventName, MaxStateLength - 1);
+            // 表示位置を切り替え
+            if (Config.SetChannelNameOnDetails)
+            {
+                wcstombs_s(nullptr, Activity.state, rawEventName, MaxStateLength - 1);
+            }
+            else
+            {
+                wcstombs_s(nullptr, Activity.details, rawEventName, MaxStateLength - 1);
+            }
         }
     }
 
@@ -123,7 +147,15 @@ static DiscordActivity CreatePresence(
                 Full2Half(rawEventText);
             }
 
-            wcstombs_s(nullptr, Activity.state, rawEventText, MaxImageTextLength - 1);
+            // 表示位置を切り替え
+            if (Config.SetChannelNameOnDetails)
+            {
+                wcstombs_s(nullptr, Activity.assets.large_text, rawEventText, MaxImageTextLength - 1);
+            }
+            else
+            {
+                wcstombs_s(nullptr, Activity.state, rawEventText, MaxImageTextLength - 1);
+            }
         }
         else if (const auto rawEventExtText = Program.value().pszEventExtText; rawEventExtText != nullptr && !IsBlank(rawEventExtText, MaxImageTextLength))
         {
@@ -133,7 +165,15 @@ static DiscordActivity CreatePresence(
                 Full2Half(rawEventExtText);
             }
 
-            wcstombs_s(nullptr, Activity.state, rawEventExtText, MaxImageTextLength - 1);
+            // 表示位置を切り替え
+            if (Config.SetChannelNameOnDetails)
+            {
+                wcstombs_s(nullptr, Activity.assets.large_text, rawEventExtText, MaxImageTextLength - 1);
+            }
+            else
+            {
+                wcstombs_s(nullptr, Activity.state, rawEventExtText, MaxImageTextLength - 1);
+            }
         }
     }
 
@@ -160,10 +200,11 @@ static DiscordActivity CreatePresence(
     {
         strcpy_s(Activity.assets.small_image, LOGO_DEFAULT);
 
-        if (Host.has_value()) {
-            sprintf_s(Activity.assets.small_text, "%ws v%ws / TvTestRPC v%s", Host.value().pszAppName, Host.value().pszVersionText, TvTestRPCVersion);
+        if (Host.has_value())
+        {
+            sprintf_s(Activity.assets.small_text, "%ws v%ws / TVTestRPC v%s", Host.value().pszAppName, Host.value().pszVersionText, TvTestRPCVersion);
         }
     }
-    
+
     return Activity;
 }

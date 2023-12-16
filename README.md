@@ -1,18 +1,21 @@
 # TvTestRPC
 
-[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/SlashNephy/TvTestRPC/latest?style=flat-square)](https://github.com/SlashNephy/TvTestRPC/actions/workflows/latest.yml)
-[![GitHub release (latest by date)](https://img.shields.io/github/v/release/SlashNephy/TvTestRPC?style=flat-square)](https://github.com/SlashNephy/TvTestRPC/releases)
+[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/stuayu/TVTestRPC/latest?style=flat-square)](https://github.com/stuayu/TVTestRPC/actions/workflows/latest.yml)
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/stuayu/TVTestRPC?style=flat-square)](https://github.com/stuayu/TVTestRPC/releases)
 
 TVTest で Discord Rich Presence を使えるようにするプラグインです。(TVTest ver.0.6.0 or later)
+- オプションで SetChannelNameOnDetails=1 にすると以下の表示になります  
+  <img src="images/image1.png" width="45%">
 
-![image](https://user-images.githubusercontent.com/7302150/175781038-7905b66d-4067-49f6-ad96-b4bccdad94ea.png)
+- オプションで SetChannelNameOnDetails=0 にするとフォーク元と同じ表示になります  
+  ![image](https://user-images.githubusercontent.com/7302150/175781038-7905b66d-4067-49f6-ad96-b4bccdad94ea.png)
 
 ## Get Started
 
 ビルド済み成果物は以下からダウンロードできます。
 
-- ワークフロー [![GitHub Workflow Status](https://img.shields.io/github/workflow/status/SlashNephy/TvTestRPC/latest?style=flat-square)](https://github.com/SlashNephy/TvTestRPC/actions/workflows/latest.yml) のビルド履歴 -> Artifacts
-- [![GitHub release (latest by date)](https://img.shields.io/github/v/release/SlashNephy/TvTestRPC?style=flat-square)](https://github.com/SlashNephy/TvTestRPC/releases)
+- ワークフロー [![GitHub Workflow Status](https://img.shields.io/github/workflow/status/stuayu/TVTestRPC/latest?style=flat-square)](https://github.com/stuayu/TVTestRPC/actions/workflows/latest.yml) のビルド履歴 -> Artifacts
+- [![GitHub release (latest by date)](https://img.shields.io/github/v/release/stuayu/TVTestRPC?style=flat-square)](https://github.com/stuayu/TVTestRPC/releases)
 
 ## Features
 
@@ -61,7 +64,6 @@ TVTest で Discord Rich Presence を使えるようにするプラグインで�
 - 東経110度 CS  
   2021/06/03 現在の全局に対応しています。
 
-ロゴ追加のリクエストは [Issue](https://github.com/SlashNephy/TvTestRPC/issues/new/choose) からお願いします。
 
 ## Configuration
 
@@ -81,6 +83,9 @@ ConvertToHalfWidth=1
 
 ; チューニング空間を無視してチャンネルロゴを適用します。
 IgnoreTuningSpace=0
+
+; detailsにチャンネル名と局ロゴ上に番組情報を表示する形式にする
+SetChannelNameOnDetails=1
 
 [Logos]
 ; 特定のサービス ID のロゴを任意に書き換えられます。

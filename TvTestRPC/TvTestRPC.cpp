@@ -1,9 +1,10 @@
-﻿#include "stdafx.h"
+﻿#define _CRT_SECURE_NO_WARNINGS
+#include "stdafx.h"
 
 #include "Config.h"
 #include "Activity.h"
 
-constexpr auto TvTestRPCWindowClass = L"TvTestRPC Window";
+constexpr auto TvTestRPCWindowClass = L"TVTestRPC Window";
 constexpr auto UpdateActivityTimerId = WM_APP + 1;
 constexpr auto UpdateActivityTimerIntervalMs = 3000;
 constexpr auto RunCallbacksTimerId = WM_APP + 2;
@@ -11,8 +12,8 @@ constexpr auto RunCallbacksTimerIntervalMs = 100;
 
 class CTvTestRPCPlugin final : public TVTest::CTVTestPlugin
 {
-    IDiscordCore* m_discord{};
-    IDiscordActivityManager* m_activities{};
+    IDiscordCore *m_discord{};
+    IDiscordActivityManager *m_activities{};
     DiscordActivity m_lastActivity{};
 
     wchar_t m_iniFileName[MAX_PATH]{};
@@ -27,7 +28,7 @@ class CTvTestRPCPlugin final : public TVTest::CTVTestPlugin
     void InitializeDiscord();
     void UpdateActivity();
 
-    static LRESULT CALLBACK EventCallback(UINT Event, LPARAM lParam1, LPARAM lParam2, void* pClientData);
+    static LRESULT CALLBACK EventCallback(UINT Event, LPARAM lParam1, LPARAM lParam2, void *pClientData);
     static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 public:
@@ -43,12 +44,12 @@ public:
     /*
      * プラグインの情報を返す
      */
-    bool GetPluginInfo(TVTest::PluginInfo* pInfo) override
+    bool GetPluginInfo(TVTest::PluginInfo *pInfo) override
     {
         pInfo->Type = TVTest::PLUGIN_TYPE_NORMAL;
         pInfo->Flags = 0;
         pInfo->pszPluginName = L"Discord Rich Presence";
-        pInfo->pszCopyright = L"© 2021 Nep, 2019-2020 noriokun4649";
+        pInfo->pszCopyright = L"© 2023 stuayu, 2021 Nep, 2019-2020 noriokun4649";
         pInfo->pszDescription = L"Discord Rich Presence を表示します。";
 
         return true;
@@ -82,8 +83,7 @@ public:
         // ウィンドウの作成
         m_hwnd = ::CreateWindowEx(
             0, TvTestRPCWindowClass, nullptr, WS_POPUP,
-            0, 0, 0, 0, HWND_MESSAGE, nullptr, g_hinstDLL, this
-        );
+            0, 0, 0, 0, HWND_MESSAGE, nullptr, g_hinstDLL, this);
         if (m_hwnd == nullptr)
         {
             return false;
@@ -114,7 +114,7 @@ public:
 /*
  * プラグインのインスタンスを作成する
  */
-TVTest::CTVTestPlugin* CreatePluginClass()
+TVTest::CTVTestPlugin *CreatePluginClass()
 {
     return new CTvTestRPCPlugin;
 }
@@ -132,16 +132,18 @@ void CTvTestRPCPlugin::LoadConfig()
     m_config.ShowChannelLogo = GetBufferedProfileInt(settings.data(), L"ShowChannelLogo", m_config.ShowChannelLogo) > 0;
     m_config.ConvertToHalfWidth = GetBufferedProfileInt(settings.data(), L"ConvertToHalfWidth", m_config.ConvertToHalfWidth) > 0;
     m_config.IgnoreTuningSpace = GetBufferedProfileInt(settings.data(), L"IgnoreTuningSpace", m_config.IgnoreTuningSpace) > 0;
+    m_config.SetChannelNameOnDetails = GetBufferedProfileInt(settings.data(), L"SetChannelNameOnDetails", m_config.SetChannelNameOnDetails) > 0;
 
     const auto logos = GetPrivateProfileSectionBuffer(L"Logos", m_iniFileName);
-    for (auto p = logos.data(); *p; p += wcslen(p) + 1) {
+    for (auto p = logos.data(); *p; p += wcslen(p) + 1)
+    {
         WORD serviceId;
 
         if (char logoKey[MaxImageKeyLength]; swscanf_s(p, L"%hd=%S", &serviceId, logoKey, MaxImageKeyLength) == 2)
-		{
+        {
             m_config.Logos[serviceId] = logoKey;
-		}
-	}
+        }
+    }
 }
 
 /*
@@ -156,7 +158,7 @@ void CTvTestRPCPlugin::InitializeDiscord()
 
     DiscordCreateParams params{};
     DiscordCreateParamsSetDefault(&params);
-    params.client_id = 844540020286685184;
+    params.client_id = 1119867394660249700; // Discordで作成したアプリのID
     params.flags = DiscordCreateFlags_NoRequireDiscord;
 
     if (DiscordCreate(DISCORD_VERSION, &params, &m_discord) == DiscordResult_Ok)
@@ -204,16 +206,20 @@ void CTvTestRPCPlugin::UpdateActivity()
         std::optional<TVTest::ServiceInfo> service = std::nullopt;
 
         // サブチャンネルを考慮する
-        for (auto i = 0; i < SUB_SERVICE_ID_ALLOWANCE; i++)
-        {
-            TVTest::ServiceInfo Service{};
+        // for (auto i = 0; i < SUB_SERVICE_ID_ALLOWANCE; i++)
+        //{
+        //    TVTest::ServiceInfo Service{};
 
-            if (m_pApp->GetServiceInfo(i, &Service))
-            {
-                service = std::optional(Service);
-                break;
-            }
-        }
+        //    if (m_pApp->GetServiceInfo(i, &Service))
+        //    {
+        //        service = std::optional(Service);
+        //        break;
+        //    }
+        //}
+        int serviceNum = m_pApp->GetService(); // サービスのインデックス値を取得
+        TVTest::ServiceInfo Service{};
+        m_pApp->GetServiceInfo(serviceNum, &Service); // 取得したインデックスに合致したサービス情報を取得
+        service = std::optional(Service);
 
         // ChannelInfo
         TVTest::ChannelInfo Channel{};
@@ -244,8 +250,9 @@ void CTvTestRPCPlugin::UpdateActivity()
         const auto serviceName = service.has_value() && !IsBlank(service.value().szServiceName, ServiceNameLength) ? service.value().szServiceName : L"[不明]";
         const auto eventName = program.has_value() && !IsBlank(program.value().pszEventName, MaxStateLength) ? program.value().pszEventName : L"[不明]";
         wchar_t buf[256];
-        wsprintf(buf, L"Rich Presence を更新しました。(サービス名: %s, 番組名: %s)", serviceName, eventName);
-        OutputDebugString(buf);
+        wsprintf(buf, L"Rich Presence を更新しました。(サービス名: %s, 番組名: %s サービスID：%d)", serviceName, eventName, service.value().ServiceID);
+        m_pApp->AddLog(buf);
+        // OutputDebugString(buf);
 #endif
     }
 }
@@ -253,9 +260,9 @@ void CTvTestRPCPlugin::UpdateActivity()
 /*
  * TVTest のイベントコールバック
  */
-LRESULT CALLBACK CTvTestRPCPlugin::EventCallback(const UINT Event, const LPARAM lParam1, LPARAM, void* pClientData)
+LRESULT CALLBACK CTvTestRPCPlugin::EventCallback(const UINT Event, const LPARAM lParam1, LPARAM, void *pClientData)
 {
-    auto* pThis = static_cast<CTvTestRPCPlugin*>(pClientData);
+    auto *pThis = static_cast<CTvTestRPCPlugin *>(pClientData);
 
     switch (Event)
     {
@@ -300,27 +307,27 @@ LRESULT CALLBACK CTvTestRPCPlugin::WndProc(const HWND hWnd, const UINT uMsg, con
     switch (uMsg)
     {
     case WM_CREATE:
-        {
-            auto* const pcs = reinterpret_cast<LPCREATESTRUCT>(lParam);
-            auto* pThis = static_cast<CTvTestRPCPlugin*>(pcs->lpCreateParams);
+    {
+        auto *const pcs = reinterpret_cast<LPCREATESTRUCT>(lParam);
+        auto *pThis = static_cast<CTvTestRPCPlugin *>(pcs->lpCreateParams);
 
-            ::SetWindowLongPtr(hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(pThis));
-            SetTimer(hWnd, UpdateActivityTimerId, UpdateActivityTimerIntervalMs, nullptr);
-            SetTimer(hWnd, RunCallbacksTimerId, RunCallbacksTimerIntervalMs, nullptr);
-        }
+        ::SetWindowLongPtr(hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(pThis));
+        SetTimer(hWnd, UpdateActivityTimerId, UpdateActivityTimerIntervalMs, nullptr);
+        SetTimer(hWnd, RunCallbacksTimerId, RunCallbacksTimerIntervalMs, nullptr);
+    }
 
         return true;
 
     case WM_TIMER:
         if (wParam == UpdateActivityTimerId)
         {
-            auto* pThis = reinterpret_cast<CTvTestRPCPlugin*>(::GetWindowLongPtr(hWnd, GWLP_USERDATA));
+            auto *pThis = reinterpret_cast<CTvTestRPCPlugin *>(::GetWindowLongPtr(hWnd, GWLP_USERDATA));
 
             pThis->UpdateActivity();
         }
         else if (wParam == RunCallbacksTimerId)
         {
-            if (auto * pThis = reinterpret_cast<CTvTestRPCPlugin*>(::GetWindowLongPtr(hWnd, GWLP_USERDATA)); pThis->m_isReady)
+            if (auto *pThis = reinterpret_cast<CTvTestRPCPlugin *>(::GetWindowLongPtr(hWnd, GWLP_USERDATA)); pThis->m_isReady)
             {
                 pThis->m_discord->run_callbacks(pThis->m_discord);
             }
