@@ -19,7 +19,7 @@ TVTest で Discord Rich Presence を使えるようにするプラグインで�
 
 ## Features
 
-[本家さんバージョン](https://github.com/noriokun4649/TvTestRPC) と同等ですが, 以下の相違点があります。
+[本家さんバージョン](https://github.com/noriokun4649/TvTestRPC) と [SlashNephy](https://github.com/SlashNephy/TvTestRPC)と同等ですが, 以下の相違点があります。
 
 - TvtPlay プラグインと連携し, ファイル再生時にも経過時間を表示
   - シーク位置を加味して経過時間を計算
@@ -27,37 +27,14 @@ TVTest で Discord Rich Presence を使えるようにするプラグインで�
 - 視聴中の番組が終了したときに Presence が更新されないバグを修正
 - 全角文字を半角に変換するオプションを追加
 - サブチャンネル (TOKYO MX2 等) でも Presence を表示
+  - サブチャンネルでロゴの色を変えている局にも一部対応しています。
 
 ## Station Logos
 
 現在, 次の放送局ロゴに対応しています。ロゴは Wikipedia 上で公開されているもので Public Domain となっています。
 
-- 地上波
-  - 全国  
-    NHK 総合, NHK Eテレ
-  - 関東広域  
-    日テレ, TBS, テレビ朝日, テレビ東京, フジテレビ  
-  - 近畿広域  
-    MBS毎日放送, ABCテレビ, 関西テレビ, 読売テレビ  
-
-  - 宮城  
-    ミヤギテレビ, KHB, TBC, 仙台放送
-  - 東京  
-    TOKYO MX
-  - 神奈川  
-    tvk  
-    イッツコム (CATV)
-  - 石川  
-    HAB
-  - 富山  
-    KNB, チューリップテレビ, 富山テレビ放送  
-    コミュチャン (CATV)
-  - 大阪  
-    テレビ大阪
-  - 兵庫  
-    サンテレビ
-  - 広島  
-    テレビ新広島 (by [@yude](https://github.com/yude))
+- 地上波\
+  v2.6.0以降 **全国の地上波民放**と一部CATV事業者(J:COM等)のロゴ表示に対応しています。
 
 - BS  
   2022/03/11 現在の全局に対応しています。
